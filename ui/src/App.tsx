@@ -10,6 +10,7 @@ import {
   type UiSection,
 } from "./bridge"
 import { CartDrawer, type CartItem } from "./components/CartDrawer"
+import { CartWidget } from "./components/CartWidget"
 import { PipButton } from "./components/PipButton"
 import { ProductCarousel } from "./components/ProductCarousel"
 import { Toast } from "./components/Toast"
@@ -137,6 +138,12 @@ export function App() {
           {connectionError}
         </p>
       )}
+      <CartWidget
+        items={cart}
+        loadingIds={loadingIds}
+        onQuantityChange={changeQuantity}
+        onRemove={removeItem}
+      />
       {sections.length === 0 ? (
         <p className="py-20 text-center text-sm text-tertiary">Nenhum produto para exibir.</p>
       ) : (
