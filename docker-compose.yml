@@ -9,6 +9,8 @@ services:
     environment:
       KWK_SESSION_DB_PATH: /data/kawakami_sessions.db
       KWK_TOKEN_FILE_PATH: /data/.kawakami_token.json
+      KWK_AUTH0_DOMAIN: ${KWK_AUTH0_DOMAIN:-}
+      KWK_AUTH0_AUDIENCE: ${KWK_AUTH0_AUDIENCE:-https://kawakami.axischat.com.br}
     ports:
       - "127.0.0.1:8000:8000"
     volumes:

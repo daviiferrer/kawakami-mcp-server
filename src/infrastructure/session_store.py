@@ -70,6 +70,14 @@ class SessionStore:
             )
         return session_id
 
+    def create_session_with_id(self, session_id: str) -> str:
+        with self._get_conn() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO sessions (id, created_at) VALUES (?, ?)",
+                (session_id, time.time()),
+            )
+        return session_id
+
     def session_exists(self, session_id: str) -> bool:
         with self._get_conn() as conn:
             row = conn.execute(
