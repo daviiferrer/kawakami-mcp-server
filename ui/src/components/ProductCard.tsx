@@ -33,7 +33,7 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
           className="max-h-[100px] max-w-[90%] object-contain"
         />
       </div>
-      <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3">
+      <div className="flex flex-1 flex-col gap-1 px-3 pt-2.5 pb-3">
         {product.tagLabel && (
           <Badge color={TAG_COLOR[product.tag!]} variant="solid" size="sm" className="self-start">
             {product.tagLabel}
@@ -41,7 +41,7 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
         )}
         <p className="line-clamp-2 text-sm font-medium leading-snug">{product.name}</p>
         <p className="text-2xs text-tertiary">{product.stock} em estoque</p>
-        <div className="flex items-end justify-between gap-2 mt-1">
+        <div className="flex items-end justify-between gap-2 mt-auto">
           <div className="whitespace-nowrap leading-none">
             {product.originalPrice && product.offerPrice && (
               <p className="text-2xs text-tertiary line-through">{fmt(product.originalPrice)}</p>
