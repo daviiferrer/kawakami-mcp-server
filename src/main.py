@@ -19,8 +19,8 @@ def main() -> None:
     from src.server import create_mcp
 
     mcp = create_mcp(host=args.host, port=args.port)
-    mcp.settings.log_level = settings.log_level.lower()
-    mcp.run(transport=args.transport)
+    import uvicorn
+    uvicorn.run(mcp, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

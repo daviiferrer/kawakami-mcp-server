@@ -21,7 +21,6 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
     token_verifier = None
     auth_settings = None
     if settings.auth0_domain:
-        token_verifier = Auth0TokenVerifier()
         from mcp.server.auth.settings import AuthSettings
 
         issuer = f"https://{settings.auth0_domain}/"
@@ -35,7 +34,6 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
         "Kawakami Supermercados",
         host=host,
         port=port,
-        token_verifier=token_verifier,
         auth=auth_settings,
         instructions="Servidor MCP do Supermercados Kawakami. Busque produtos, compare precos, "
         "monte carrinho de compras e salve listas. CEP padrao: 19700000 (Paraguacu Paulista).",
@@ -219,4 +217,19 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
             "scopes_supported": ["cart:read", "cart:write"],
         })
 
-    return mcp
+    # Inject Bearer token into context for tool-level auth checks
+    app = mcp.streamable_http_app()
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from src.infrastructure.auth_required import set_auth_token
+
+    class AuthTokenMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            auth_header = request.headers.get("Authorization", "")
+            token = None
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+            set_auth_token(token)
+            return await call_next(request)
+
+    app.add_middleware(AuthTokenMiddleware)
+    return app
