@@ -5,6 +5,7 @@ import { ProductCarousel } from "./components/ProductCarousel"
 import { CartDrawer } from "./components/CartDrawer"
 import type { CartItem } from "./components/CartDrawer"
 import { PipButton } from "./components/PipButton"
+import { Toast } from "./components/Toast"
 import { getSections, onSectionsChange, type UiSection } from "./bridge"
 
 applyDocumentTheme("dark")
@@ -12,6 +13,7 @@ applyDocumentTheme("dark")
 export function App() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   const bridgeSections = useSyncExternalStore(onSectionsChange, getSections)
 
@@ -24,6 +26,7 @@ export function App() {
   const addToCart = useCallback((id: number) => {
     const product = allProducts.find(p => p.id === id)
     if (!product) return
+    setToast(product.name)
     setCart(prev => {
       const existing = prev.find(i => i.id === id)
       if (existing) { const q = existing.quantity + 1; return prev.map(i => i.id === id ? { ...i, quantity: q, subtotal: q * i.unitPrice } : i) }
@@ -51,6 +54,7 @@ export function App() {
       <div className="h-20" />
       <PipButton count={unitCount} onClick={() => setDrawerOpen(true)} />
       <CartDrawer items={cart} open={drawerOpen} onClose={() => setDrawerOpen(false)} onQuantityChange={handleQtyChange} onRemove={handleRemove} onCheckout={handleCheckout} />
+      {toast && <Toast text={toast} onDone={() => setToast(null)} />}
     </div>
   )
 }
