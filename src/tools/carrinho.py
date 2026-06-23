@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 from mcp.types import CallToolResult
@@ -83,17 +82,49 @@ async def _batch_add(
     adicionados: list[str] = []
     falharam: list[dict[str, Any]] = []
 
-    async def resolve(item: dict[str, Any]) -> tuple[int, int, str | None]:
-        produto_id = int(item.get("produto_id", 0))
-        qtd = int(item.get("quantidade", 1))
+    for entry in itens:
+        produto_id = int(entry.get("produto_id", 0))
+        qtd = int(entry.get("quantidade", 1))
         if produto_id <= 0 or qtd <= 0:
-            return produto_id, qtd, "produto_id ou quantidade invalidos"
-        product = await vip_client.get_product_by_id(produto_id, cep=cep)
+            falharam.append({"produto_id": produto_id, "quantidade": qtd, "motivo": "produto_id ou quantidade invalidos"})
+            continue
+
+        nome = entry.get("nome", "")
+        preco_unit = entry.get("preco_unit") or entry.get("preco_unitario") or entry.get("preco")
+        un = entry.get("un", "UN")
+        imagem = entry.get("imagem", "")
+        em_oferta = bool(entry.get("em_oferta"))
+        tag = entry.get("tag", "")
+
+        if nome and preco_unit is not None:
+            item = CarrinhoItem(
+                produto_id=produto_id,
+                nome=str(nome),
+                preco_unit=float(preco_unit),
+                quantidade=qtd,
+                subtotal=round(float(preco_unit) * qtd, 2),
+                un=str(un),
+                imagem=str(imagem),
+                em_oferta=em_oferta,
+                tag=str(tag),
+            )
+            session_store.add_to_cart(session_id, item)
+            adicionados.append(f"{nome} ({qtd}x)")
+            continue
+
+        try:
+            product = await vip_client.get_product_by_id(produto_id, cep=cep)
+        except Exception as exc:
+            falharam.append({"produto_id": produto_id, "quantidade": qtd, "motivo": str(exc)})
+            continue
+
         if product is None:
-            return produto_id, qtd, f"produto {produto_id} nao encontrado"
+            falharam.append({"produto_id": produto_id, "quantidade": qtd, "motivo": f"produto {produto_id} nao encontrado"})
+            continue
+
         price = product.preco_efetivo
-        tag = product.oferta.tag if product.oferta else ""
-        cart_item = CarrinhoItem(
+        product_tag = product.oferta.tag if product.oferta else ""
+        item = CarrinhoItem(
             produto_id=product.produto_id,
             nome=product.descricao,
             preco_unit=price,
@@ -102,27 +133,10 @@ async def _batch_add(
             un=product.unidade_sigla,
             imagem=product.imagem,
             em_oferta=product.em_oferta,
-            tag=tag,
+            tag=product_tag,
         )
-        session_store.add_to_cart(session_id, cart_item)
+        session_store.add_to_cart(session_id, item)
         adicionados.append(f"{product.descricao} ({qtd}x)")
-        return produto_id, qtd, None
-
-    tasks = [resolve(item) for item in itens]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    for idx, result in enumerate(results):
-        if isinstance(result, BaseException):
-            item = itens[idx]
-            falharam.append({
-                "produto_id": item.get("produto_id", 0),
-                "quantidade": item.get("quantidade", 1),
-                "motivo": str(result),
-            })
-            continue
-        pid, qtd, err = result
-        if err:
-            falharam.append({"produto_id": pid, "quantidade": qtd, "motivo": err})
 
     cart = session_store.get_cart(session_id)
     total = sum(ci.subtotal for ci in cart)

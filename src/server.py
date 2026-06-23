@@ -117,7 +117,7 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
     )(verificar_estoque)
     mcp.tool(
         title="Adicionar ao carrinho",
-        description="Use esta tool para adicionar produtos ao carrinho. Modo unitario: informe termo e quantidade. Modo batch: informe itens com [{produto_id, quantidade}]. Use modo='substituir' para limpar o carrinho antes de adicionar.",
+        description="Use esta tool para adicionar produtos ao carrinho. Modo unitario: informe termo e quantidade. Modo batch rapido: informe itens com [{produto_id, quantidade, nome, preco_unit, un, imagem}]. Se informar nome+preco_unit, adiciona direto sem buscar na API. Use modo='substituir' para limpar o carrinho antes.",
         annotations=write,
         meta=WIDGET_TOOL_META,
         structured_output=False,
