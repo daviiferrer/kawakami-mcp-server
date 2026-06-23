@@ -144,7 +144,7 @@ export function App() {
         onQuantityChange={changeQuantity}
         onRemove={removeItem}
       />
-      {sections.length === 0 ? (
+      {sections.length === 0 && cart.length === 0 ? (
         <p className="py-20 text-center text-sm text-tertiary">Nenhum produto para exibir.</p>
       ) : (
         sections.map((section) => (
@@ -162,7 +162,7 @@ export function App() {
         ))
       )}
       <div className="h-4" />
-      <PipButton count={unitCount} onClick={() => setDrawerOpen(true)} />
+      {cart.length === 0 && <PipButton count={unitCount} onClick={() => setDrawerOpen(true)} />}
       <CartDrawer
         items={cart}
         open={drawerOpen}

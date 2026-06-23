@@ -24,7 +24,7 @@ export function CartCard({ item, isLoading, onQuantityChange, onRemove }: Props)
         />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-xs font-medium leading-snug">{item.name}</p>
-          <p className="text-2xs text-tertiary">{fmt(item.unitPrice)}/{item.unit}</p>
+          <p className="text-2xs text-tertiary whitespace-nowrap">{fmt(item.unitPrice)}/{item.unit}</p>
           {item.isOffer && (
             <Badge color="success" variant="solid" size="sm" className="mt-0.5">
               Oferta
@@ -57,7 +57,7 @@ export function CartCard({ item, isLoading, onQuantityChange, onRemove }: Props)
               </Button>
             </div>
             <div className="flex items-center gap-1">
-              <p className="heading-xs text-success">{fmt(item.subtotal)}</p>
+              <p className="heading-xs text-success whitespace-nowrap">{fmt(item.subtotal)}</p>
               <Button
                 color="primary"
                 variant="ghost"
