@@ -181,7 +181,10 @@ class VipCommerceClient:
 
             if page >= total_pages or not page_products:
                 break
-            if not only_offers and len(produtos) >= limit:
+            if only_offers:
+                if len([p for p in produtos if p.em_oferta]) >= limit:
+                    break
+            elif len(produtos) >= limit:
                 break
             page += 1
 
@@ -220,7 +223,7 @@ class VipCommerceClient:
         tasks = [
             self.get_products_by_department(
                 dept.id,
-                limit=100_000,
+                limit=limit,
                 only_offers=True,
                 cep=cep,
             )
