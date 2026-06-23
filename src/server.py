@@ -5,7 +5,6 @@ from starlette.responses import JSONResponse
 
 from src.config import settings
 from src.infrastructure.auth import token_manager
-from src.infrastructure.auth0_verifier import Auth0TokenVerifier
 from src.presentation.widget import (
     WIDGET_MIME_TYPE,
     WIDGET_RESOURCE_META,
@@ -18,25 +17,10 @@ token_manager.load()
 
 
 def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
-    token_verifier = None
-    auth_settings = None
-    if settings.auth0_domain:
-        token_verifier = Auth0TokenVerifier()
-        from mcp.server.auth.settings import AuthSettings
-
-        issuer = f"https://{settings.auth0_domain}/"
-        auth_settings = AuthSettings(
-            issuer_url=issuer,
-            resource_server_url=settings.auth0_audience or "https://kawakami.axischat.com.br",
-            required_scopes=["cart:read", "cart:write"],
-        )
-
     mcp = FastMCP(
         "Kawakami Supermercados",
         host=host,
         port=port,
-        token_verifier=token_verifier,
-        auth=auth_settings,
         instructions="Servidor MCP do Supermercados Kawakami. Busque produtos, compare precos, "
         "monte carrinho de compras e salve listas. CEP padrao: 19700000 (Paraguacu Paulista).",
     )
@@ -190,5 +174,29 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
     @mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
     async def health_check(_: Request) -> JSONResponse:
         return JSONResponse({"status": "ok"})
+
+    if settings.auth0_domain:
+        @mcp.custom_route(
+            "/.well-known/oauth-protected-resource",
+            methods=["GET"],
+            include_in_schema=False,
+        )
+        async def oauth_metadata(_: Request) -> JSONResponse:
+            return JSONResponse({
+                "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
+                "authorization_servers": [f"https://{settings.auth0_domain}/"],
+                "scopes_supported": ["cart:read", "cart:write"],
+            })
+        @mcp.custom_route(
+            "/.well-known/oauth-protected-resource/mcp",
+            methods=["GET"],
+            include_in_schema=False,
+        )
+        async def oauth_metadata_mcp(_: Request) -> JSONResponse:
+            return JSONResponse({
+                "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
+                "authorization_servers": [f"https://{settings.auth0_domain}/"],
+                "scopes_supported": ["cart:read", "cart:write"],
+            })
 
     return mcp

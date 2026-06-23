@@ -1,8 +1,11 @@
 import asyncio
 import time
 
+from mcp.server.fastmcp import Context
+
 from src.config import settings
 from src.domain.models import CarrinhoItem, ListaCompras
+from src.infrastructure.auth_required import require_auth
 from src.infrastructure.error_handler import safe_tool
 from src.infrastructure.session_store import session_store
 from src.infrastructure.validation import sanitize_term, validate_nome_lista
@@ -41,11 +44,12 @@ async def salvar_lista(
     nome: str,
     itens: str,
     cep: str = settings.default_cep,
+    ctx: Context = None,
 ) -> str:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
-        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
+        return auth_err.content[0].text
     nome = validate_nome_lista(nome)
     items_raw = [sanitize_term(i) for i in itens.split(",") if i.strip()]
     items_list = [i for i in items_raw if i]
@@ -70,7 +74,7 @@ async def salvar_lista(
 
 
 @safe_tool
-async def minhas_listas(session_id: str) -> str:
+async def minhas_listas(session_id: str, ctx: Context = None) -> str:
     from src.infrastructure.auth_required import require_auth
     auth_err = require_auth()
     if auth_err is not None:
@@ -80,11 +84,11 @@ async def minhas_listas(session_id: str) -> str:
 
 
 @safe_tool
-async def ver_lista(session_id: str, nome: str) -> str:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+async def ver_lista(session_id: str, nome: str, ctx: Context = None) -> str:
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
-        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
+        return auth_err.content[0].text
     nome = validate_nome_lista(nome)
     lista = session_store.get_list(session_id, nome)
     if not lista:
@@ -93,12 +97,13 @@ async def ver_lista(session_id: str, nome: str) -> str:
 
 
 @safe_tool
-async def excluir_lista(session_id: str, nome: str) -> str:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+async def excluir_lista(session_id: str, nome: str, ctx: Context = None) -> str:
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
-        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
+        return auth_err.content[0].text
     nome = validate_nome_lista(nome)
     if session_store.delete_list(session_id, nome):
         return f"Lista '{nome}' excluida."
     return f"Lista '{nome}' nao encontrada."
+

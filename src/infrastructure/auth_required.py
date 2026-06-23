@@ -1,13 +1,15 @@
-import jwt
-from contextvars import ContextVar
 from mcp.types import CallToolResult, TextContent
-from mcp.server.auth.middleware.auth_context import get_access_token
 from src.config import settings
 
 
-def require_auth() -> CallToolResult | None:
-    token = get_access_token()
-    if not token or not token.token:
+def require_auth(request=None) -> CallToolResult | None:
+    """Check Bearer token from HTTP request. Returns None if OK, error result if auth needed."""
+    token = None
+    if request:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
         return CallToolResult(
             content=[TextContent(
                 type="text",
@@ -18,9 +20,19 @@ def require_auth() -> CallToolResult | None:
                     f'Bearer resource_metadata="{settings.auth0_audience}'
                     f'/.well-known/oauth-protected-resource", '
                     f'error="insufficient_scope", '
-                    f'error_description="Login required to access cart and lists"'
+                    f'error_description="Login required to access cart and links"'
                 ]
             },
             isError=True,
         )
+    return None
+
+
+def get_bearer_token(request=None) -> str | None:
+    """Extract Bearer token from request."""
+    if not request:
+        return None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
     return None

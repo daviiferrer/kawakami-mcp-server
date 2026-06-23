@@ -1,7 +1,9 @@
 from mcp.types import CallToolResult
+from mcp.server.fastmcp import Context
 
 from src.config import settings
 from src.domain.models import CarrinhoItem
+from src.infrastructure.auth_required import require_auth
 from src.infrastructure.error_handler import safe_tool
 from src.infrastructure.session_store import session_store
 from src.infrastructure.validation import sanitize_cep, sanitize_term, validate_quantidade
@@ -16,13 +18,12 @@ async def adicionar_ao_carrinho(
     termo: str,
     cep: str = settings.default_cep,
     quantidade: int = 1,
+    ctx: Context = None,
 ) -> CallToolResult | str:
-    from src.infrastructure.auth_required import require_auth
-
-    auth_err = require_auth()
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
         return auth_err
-
     termo = sanitize_term(termo)
     if not termo:
         return "Digite um produto valido para adicionar ao carrinho."
@@ -59,9 +60,9 @@ async def adicionar_ao_carrinho(
 
 
 @safe_tool
-async def ver_carrinho(session_id: str) -> CallToolResult:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+async def ver_carrinho(session_id: str, ctx: Context = None) -> CallToolResult:
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
         return auth_err
     cart = session_store.get_cart(session_id)
@@ -69,9 +70,9 @@ async def ver_carrinho(session_id: str) -> CallToolResult:
 
 
 @safe_tool
-async def remover_do_carrinho(session_id: str, termo: str) -> CallToolResult | str:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+async def remover_do_carrinho(session_id: str, termo: str, ctx: Context = None) -> CallToolResult | str:
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
         return auth_err
     termo = sanitize_term(termo)
@@ -95,9 +96,9 @@ async def remover_do_carrinho(session_id: str, termo: str) -> CallToolResult | s
 
 
 @safe_tool
-async def limpar_carrinho(session_id: str) -> CallToolResult:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+async def limpar_carrinho(session_id: str, ctx: Context = None) -> CallToolResult:
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
         return auth_err
     session_store.clear_cart(session_id)
