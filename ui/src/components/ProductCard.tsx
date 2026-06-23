@@ -19,9 +19,12 @@ const TAG_COLOR = {
 
 export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
   const price = activePrice(product)
-  const actionLabel = isInCart
-    ? `Adicionar mais uma unidade de ${product.name}`
-    : `Adicionar ${product.name} ao carrinho`
+  const outOfStock = product.stock === 0
+  const actionLabel = outOfStock
+    ? `${product.name} está indisponível`
+    : isInCart
+      ? `Adicionar mais uma unidade de ${product.name}`
+      : `Adicionar ${product.name} ao carrinho`
 
   return (
     <article className="min-w-[210px] max-w-[210px] flex-shrink-0 snap-start rounded-2xl border border-default bg-surface text-default overflow-hidden flex flex-col">
@@ -40,7 +43,9 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
           </Badge>
         )}
         <p className="line-clamp-2 text-sm font-medium leading-snug">{product.name}</p>
-        <p className="text-2xs text-tertiary">{product.stock} em estoque</p>
+        {product.stock > 0 && product.stock <= 10 && (
+          <p className="text-2xs text-warning">Apenas {product.stock} unidade{product.stock !== 1 ? "s" : ""}</p>
+        )}
         <div className="flex items-end justify-between gap-2 mt-auto">
           <div className="whitespace-nowrap leading-none">
             {product.originalPrice && product.offerPrice && (
@@ -55,13 +60,13 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
             size="xs"
             uniform
             pill
-            disabled={isLoading}
+            disabled={isLoading || outOfStock}
             onClick={() => onAdd(product)}
             aria-label={actionLabel}
             title={actionLabel}
-            className="shrink-0"
+            className={`shrink-0 ${isLoading ? "animate-pulse" : ""}`}
           >
-            {isInCart ? <Check className="size-4" /> : <Plus className="size-4" />}
+            {outOfStock ? "—" : isInCart ? <Check className="size-4" /> : <Plus className="size-4" />}
           </Button>
         </div>
       </div>
