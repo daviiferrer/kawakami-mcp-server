@@ -34,15 +34,15 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
           loading="lazy"
           className="max-h-[100px] max-w-[90%] object-contain"
         />
+      </div>
+      <div className="flex min-h-[150px] flex-col px-3 pb-3 pt-2.5">
         {product.tagLabel && (
           <span
-            className={`absolute left-2 top-2 rounded-full px-2 py-1 text-2xs font-bold text-white ${tagClass}`}
+            className={`-mt-5 mb-1.5 self-start rounded-full px-2 py-0.5 text-2xs font-bold text-white ${tagClass}`}
           >
             {product.tagLabel}
           </span>
         )}
-      </div>
-      <div className="flex min-h-[150px] flex-col px-3 pb-3 pt-2.5">
         <p className="mb-1 line-clamp-2 min-h-[38px] text-sm font-medium">{product.name}</p>
         <p className="mb-2.5 text-2xs text-tertiary">{product.stock} em estoque</p>
         <div className="mt-auto flex items-end justify-between gap-2">
