@@ -11,6 +11,7 @@ export default defineConfig({
     alias: {
       "@openai/apps-sdk-ui/components/Badge": path.join(sdkRoot, "components/Badge/index.js"),
       "@openai/apps-sdk-ui/components/Button": path.join(sdkRoot, "components/Button/index.js"),
+      "@openai/apps-sdk-ui/components/Transition": path.join(sdkRoot, "components/Transition/index.js"),
     },
   },
   build: {
