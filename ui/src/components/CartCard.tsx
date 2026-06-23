@@ -14,7 +14,7 @@ interface Props {
 
 export function CartCard({ item, isLoading, onQuantityChange, onRemove }: Props) {
   return (
-    <article className="min-w-[210px] max-w-[210px] flex-shrink-0 rounded-2xl border border-default bg-surface text-default overflow-hidden">
+    <article className={`min-w-[210px] max-w-[210px] flex-shrink-0 rounded-2xl border border-default bg-surface text-default overflow-hidden ${isLoading ? "animate-pulse" : ""}`}>
       <div className="flex gap-2.5 px-3 py-2.5">
         <img
           src={`${IMG_BASE}/${item.image}`}
