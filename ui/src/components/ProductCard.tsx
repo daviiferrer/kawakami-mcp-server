@@ -24,8 +24,8 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
     : `Adicionar ${product.name} ao carrinho`
 
   return (
-    <article className="min-w-[210px] max-w-[210px] flex-shrink-0 snap-start overflow-hidden rounded-2xl border border-default bg-surface text-default">
-      <div className="relative flex h-[140px] items-center justify-center border-b border-default bg-surface-secondary">
+    <article className="min-w-[210px] max-w-[210px] flex-shrink-0 snap-start rounded-2xl border border-default bg-surface text-default overflow-hidden flex flex-col">
+      <div className="relative flex h-[140px] items-center justify-center border-b border-default bg-surface-secondary shrink-0">
         <img
           src={`${IMG_BASE}/${product.image}`}
           alt={product.name}
@@ -33,20 +33,18 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
           className="max-h-[100px] max-w-[90%] object-contain"
         />
       </div>
-      <div className="flex min-h-[150px] flex-col px-3 pb-3 pt-2.5">
+      <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3">
         {product.tagLabel && (
-          <Badge color={TAG_COLOR[product.tag!]} variant="solid" size="sm" className="-mt-5 mb-1.5 self-start">
+          <Badge color={TAG_COLOR[product.tag!]} variant="solid" size="sm" className="self-start">
             {product.tagLabel}
           </Badge>
         )}
-        <p className="mb-1 line-clamp-2 min-h-[38px] text-sm font-medium">{product.name}</p>
-        <p className="mb-2.5 text-2xs text-tertiary">{product.stock} em estoque</p>
-        <div className="mt-auto flex items-end justify-between gap-2">
-          <div className="whitespace-nowrap">
+        <p className="line-clamp-2 text-sm font-medium leading-snug">{product.name}</p>
+        <p className="text-2xs text-tertiary">{product.stock} em estoque</p>
+        <div className="flex items-end justify-between gap-2 mt-1">
+          <div className="whitespace-nowrap leading-none">
             {product.originalPrice && product.offerPrice && (
-              <p className="text-2xs text-tertiary line-through">
-                {fmt(product.originalPrice)}
-              </p>
+              <p className="text-2xs text-tertiary line-through">{fmt(product.originalPrice)}</p>
             )}
             <p className="heading-sm">{fmt(price)}</p>
             <p className="text-2xs text-tertiary">/{product.unit}</p>
@@ -61,6 +59,7 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
             onClick={() => onAdd(product)}
             aria-label={actionLabel}
             title={actionLabel}
+            className="shrink-0"
           >
             {isInCart ? <Check className="size-4" /> : <Plus className="size-4" />}
           </Button>
