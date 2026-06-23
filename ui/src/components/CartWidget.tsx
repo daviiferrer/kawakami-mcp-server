@@ -28,6 +28,7 @@ export function CartWidget({ items, loadingIds, onQuantityChange, onRemove }: Pr
 
   return (
     <div>
+      <h2 className="px-4 pb-2.5 pt-4 text-xs font-semibold uppercase tracking-wider text-tertiary">Carrinho</h2>
       <div className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {columns.map((col, ci) => (
           <div key={ci} className="flex shrink-0 snap-start flex-col gap-2.5">
