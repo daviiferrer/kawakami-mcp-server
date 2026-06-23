@@ -37,6 +37,23 @@ class Settings(BaseSettings):
     session_ttl_hours: int = 24
     session_db_path: str = ""
 
+    # Auth0 OAuth 2.1
+    auth0_domain: str = ""
+    auth0_audience: str = ""
+
+    def auth0_jwks_url(self) -> str:
+        if self.auth0_domain:
+            return f"https://{self.auth0_domain}/.well-known/jwks.json"
+        return ""
+
+    def auth0_issuer(self) -> str:
+        if self.auth0_domain:
+            return f"https://{self.auth0_domain}/"
+        return ""
+
+    def auth_enabled(self) -> bool:
+        return bool(self.auth0_domain)
+
     @field_validator("port")
     @classmethod
     def port_must_be_valid(cls, v: int) -> int:
