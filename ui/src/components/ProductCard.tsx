@@ -51,7 +51,7 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
             {product.originalPrice && product.offerPrice && (
               <p className="text-2xs text-tertiary line-through">{fmt(product.originalPrice)}</p>
             )}
-            <p className="heading-sm">{fmt(price)}</p>
+            <p className={`heading-sm ${product.offerPrice ? "text-success" : ""}`}>{fmt(price)}</p>
             <p className="text-2xs text-tertiary">/{product.unit}</p>
           </div>
           <Button
@@ -66,7 +66,7 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
             title={actionLabel}
             className={`shrink-0 ${isLoading ? "animate-pulse" : ""}`}
           >
-            {outOfStock ? "—" : isInCart ? <Check className="size-4" /> : <Plus className="size-4" />}
+            {outOfStock ? "—" : isInCart ? <Check className="size-4 animate-pulse" /> : <Plus className="size-4" />}
           </Button>
         </div>
       </div>
