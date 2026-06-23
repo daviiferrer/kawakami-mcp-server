@@ -205,4 +205,18 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
             "scopes_supported": ["cart:read", "cart:write"],
         })
 
+    @mcp.custom_route(
+        "/.well-known/oauth-protected-resource/mcp",
+        methods=["GET"],
+        include_in_schema=False,
+    )
+    async def oauth_metadata_mcp(_: Request) -> JSONResponse:
+        if not settings.auth0_domain:
+            return JSONResponse({"error": "OAuth not configured"}, status_code=404)
+        return JSONResponse({
+            "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
+            "authorization_servers": [f"https://{settings.auth0_domain}/"],
+            "scopes_supported": ["cart:read", "cart:write"],
+        })
+
     return mcp
