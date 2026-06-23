@@ -127,22 +127,22 @@ export function App() {
   const connectionError = error?.message ?? errorMessage
 
   if (!isConnected && !connectionError) {
-    return <p className="p-6 text-center text-sm text-zinc-500">Conectando ao Kawakami...</p>
+    return <p className="p-6 text-center text-sm text-tertiary">Conectando ao Kawakami...</p>
   }
 
   return (
-    <main className="min-h-dvh bg-transparent text-zinc-950 dark:text-zinc-100">
+    <main className="min-h-dvh bg-main text-default">
       {connectionError && (
         <p className="mx-4 mt-4 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
           {connectionError}
         </p>
       )}
       {sections.length === 0 ? (
-        <p className="py-20 text-center text-sm text-zinc-500">Nenhum produto para exibir.</p>
+        <p className="py-20 text-center text-sm text-tertiary">Nenhum produto para exibir.</p>
       ) : (
         sections.map((section) => (
           <section key={section.key}>
-            <h2 className="px-4 pb-2.5 pt-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <h2 className="px-4 pb-2.5 pt-4 text-xs font-semibold uppercase tracking-wider text-tertiary">
               {section.title}
             </h2>
             <ProductCarousel
