@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ofertas_do_dia</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--green:#138d45;--dark:#2f3138;--muted:#545454;--border:#e8e4dd;--orange:#f97316;--bg:#fff;--paper:#fafaf7}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--dark);max-width:480px;margin:0 auto}
+.list{padding:8px}
+.row{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:12px;animation:slideIn .3s ease-out both}
+.row:nth-child(1){animation-delay:0s}
+.row:nth-child(2){animation-delay:.05s}
+.row:nth-child(3){animation-delay:.1s}
+.row:nth-child(4){animation-delay:.15s}
+.row:nth-child(5){animation-delay:.2s}
+.pos{font-size:15px;font-weight:700;color:var(--green);width:24px;text-align:center;flex-shrink:0;font-variant-numeric:tabular-nums}
+.row img{width:44px;height:44px;object-fit:contain;background:var(--paper);flex-shrink:0}
+.info{flex:1;min-width:0}
+.name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:9px;font-weight:700;padding:1px 5px;color:#fff;display:inline-block;margin-top:2px}
+.tag-club{background:var(--orange)}
+.tag-weekly{background:var(--green)}
+.tag-exclusive{background:var(--dark)}
+.prices{text-align:right;flex-shrink:0}
+.price{font-size:17px;font-weight:700;color:var(--green)}
+.old{font-size:10px;color:#9e9e9e;text-decoration:line-through;display:block}
+.pct{font-size:11px;font-weight:700;background:#dcfce7;color:var(--green);padding:1px 5px;margin-top:2px;display:inline-block}
+@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="list">
+  <div class="row"><span class="pos">1</span><img src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/c0f9116a-a928-4dc6-823c-fbc925c28bb2.jpg"><div class="info"><div class="name">Sabao Po Omo 1,6kg Puro Cuidado</div><span class="tag tag-club"><svg data-lucide="zap" style="width:10px;height:10px;stroke:white;display:inline"></svg> Clube Amigo</span></div><div class="prices"><span class="price">R$ 18,99</span><span class="old">R$ 26,38</span></div><span class="pct">-28%</span></div>
+  <div class="row"><span class="pos">2</span><img src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/d85d344b-4c1a-47e6-938c-e55d8a57c5ba.jpg"><div class="info"><div class="name">Requeijao Vigor 200g Tradicional</div><span class="tag tag-weekly"><svg data-lucide="zap" style="width:10px;height:10px;stroke:white;display:inline"></svg> Oferta Semana</span></div><div class="prices"><span class="price">R$ 7,99</span><span class="old">R$ 8,98</span></div><span class="pct">-11%</span></div>
+  <div class="row"><span class="pos">3</span><img src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/f5eeaab2-bab9-4d63-89d5-79d31ff460b6.jpg"><div class="info"><div class="name">Arroz Tipo 1 Pateko 5kg Parboilizado</div><span class="tag tag-club"><svg data-lucide="zap" style="width:10px;height:10px;stroke:white;display:inline"></svg> Clube Amigo</span></div><div class="prices"><span class="price">R$ 22,90</span><span class="old">R$ 26,90</span></div><span class="pct">-15%</span></div>
+  <div class="row"><span class="pos">4</span><img src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/055d7c00-d167-4a31-bbaf-8eb4de563b1d.jpg"><div class="info"><div class="name">Linguica Calabresa Seara (500gr)</div><span class="tag tag-club"><svg data-lucide="zap" style="width:10px;height:10px;stroke:white;display:inline"></svg> Clube Amigo</span></div><div class="prices"><span class="price">R$ 11,95</span><span class="old">R$ 14,95</span></div><span class="pct">-20%</span></div>
+  <div class="row"><span class="pos">5</span><img src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/c6099a4b-e6d1-4c3a-b814-0b10b8b4b231.jpg"><div class="info"><div class="name">Espumante Novecentos 750ml</div><span class="tag tag-club"><svg data-lucide="zap" style="width:10px;height:10px;stroke:white;display:inline"></svg> Clube Amigo</span></div><div class="prices"><span class="price">R$ 9,99</span><span class="old">R$ 45,90</span></div><span class="pct">-78%</span></div>
+</div>
+<script>lucide.createIcons()</script>
+</body>
+</html>

@@ -12,7 +12,7 @@ async def buscar_produtos(termo: str, cep: str = settings.default_cep, pagina: i
         return "Digite um termo de busca valido."
     cep = sanitize_cep(cep)
     limite = min(max(limite, 1), 100)
-    produtos, paginator = await vip_client.search_products(termo, pagina)
+    produtos, paginator = await vip_client.search_products(termo, pagina, cep=cep)
     return format_search_results(termo, produtos[:limite], paginator)
 
 

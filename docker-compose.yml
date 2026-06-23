@@ -4,6 +4,8 @@ services:
       context: .
     image: kawakami-mcp:local
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       FASTMCP_HOST: 0.0.0.0
       FASTMCP_PORT: "8000"

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>buscar_produtos</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+/* === Tokens (Apps SDK UI) === */
+:root {
+  --color-brand: #138d45;
+  --color-brand-dark: #005e1b;
+  --color-orange: #f97316;
+  --color-red: #dc2626;
+  --color-border: #e5e7eb;
+  --ease-standard: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-enter: cubic-bezier(0.8, 0, 0.4, 1);
+  --ease-exit: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-normal: 150ms;
+  --duration-slow: 350ms;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #212121);
+  -webkit-font-smoothing: antialiased;
+  max-width: 100%;
+  padding: 0;
+}
+
+/* === Card (Inline Card pattern) === */
+.card{
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  /* AnimateLayout */
+  &[data-entering]{opacity:0;transform:translateY(8px)}
+  &[data-entering-active]{opacity:1;transform:translateY(0);transition:opacity var(--duration-slow) var(--ease-enter),transform var(--duration-slow) var(--ease-enter)}
+}
+.card-image{
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fafafa;
+  padding: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+.card-body{
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.card-name{
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text, #212121);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-meta{
+  font-size: 12px;
+  color: var(--color-text-secondary, #5f5f5f);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Badge (brand accent only) */
+.badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  padding: 2px 8px;
+  color: #fff;
+  align-self: flex-start;
+  line-height: 1.4;
+}
+.badge svg{width:12px;height:12px;flex-shrink:0}
+.badge-exclusive{background: #2f3138}
+.badge-club{background: var(--color-orange)}
+.badge-weekly{background: var(--color-brand)}
+
+/* Price */
+.price-row{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.price-current{font-size:18px;font-weight:600;line-height:1}
+.price-current.offer{color:var(--color-brand-dark)}
+.price-old{font-size:13px;color:var(--color-text-tertiary, #9e9e9e);text-decoration:line-through;line-height:1}
+.price-unit{font-size:12px;color:var(--color-text-secondary, #5f5f5f)}
+.price-discount{font-size:11px;font-weight:600;padding:1px 6px;background:#dcfce7;color:var(--color-brand-dark);line-height:1.5}
+
+/* CTA (max 1 per card) */
+.card-cta{
+  margin-top: 4px;
+  width: 100%;
+  padding: 10px 0;
+  background: var(--color-brand);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background var(--duration-normal) var(--ease-standard);
+}
+.card-cta:hover{background: var(--color-brand-dark)}
+.card-cta:active{transform:scale(.98)}
+
+/* Grid (mobile: vertical list, tablet+: carousel/grid) */
+.grid{
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--color-border);
+}
+@media (min-width: 576px){
+  .grid{flex-direction:row;flex-wrap:wrap;gap:12px;background:transparent;padding:12px}
+  .card{width:calc(50% - 6px);border-radius:12px;overflow:hidden;border:1px solid var(--color-border)}
+}
+@media (min-width: 768px){
+  .card{width:calc(33.333% - 8px)}
+}
+
+/* === OOS === */
+.oos{opacity:.5;pointer-events:none}
+.oos .card-image{filter:grayscale(.5)}
+.oos-label{font-size:11px;font-weight:600;color:var(--color-red)}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- Card: Normal product -->
+  <div class="card" data-entering data-entering-active>
+    <img class="card-image" src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/e4c2e6d4-ca53-4274-9317-1da977d20e84.jpg" alt="Arroz Ag. Pateko 1kg Parboilizado">
+    <div class="card-body">
+      <div class="card-name">Arroz Ag. Pateko 1kg Parboilizado</div>
+      <div class="price-row">
+        <span class="price-current">R$ 4,89</span>
+        <span class="price-unit">/UN</span>
+      </div>
+      <div class="card-meta">
+        <span>Em estoque</span>
+        <span>7898915414011</span>
+      </div>
+      <button class="card-cta">
+        <svg data-lucide="plus" style="width:16px;height:16px"></svg> Adicionar
+      </button>
+    </div>
+  </div>
+
+  <!-- Card: Clube Amigo offer -->
+  <div class="card" data-entering data-entering-active>
+    <img class="card-image" src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/c0f9116a-a928-4dc6-823c-fbc925c28bb2.jpg" alt="Sabao Po Omo">
+    <div class="card-body">
+      <span class="badge badge-club"><svg data-lucide="zap"></svg> Clube Amigo</span>
+      <div class="card-name">Sabao Po Omo 1,6kg Puro Cuidado</div>
+      <div class="price-row">
+        <span class="price-current offer">R$ 18,99</span>
+        <span class="price-discount">28% OFF</span>
+      </div>
+      <div class="price-row">
+        <span class="price-old">R$ 26,38</span>
+        <span class="price-unit">/UN</span>
+      </div>
+      <div class="card-meta">
+        <span>130 em estoque</span>
+        <span>ID 9522</span>
+      </div>
+      <button class="card-cta">
+        <svg data-lucide="plus" style="width:16px;height:16px"></svg> Adicionar
+      </button>
+    </div>
+  </div>
+
+  <!-- Card: Exclusiva App -->
+  <div class="card" data-entering data-entering-active>
+    <img class="card-image" src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/6699785a-5a94-4a14-ad57-6094f8de5afc.jpg" alt="Nissin Lamen">
+    <div class="card-body">
+      <span class="badge badge-exclusive"><svg data-lucide="zap"></svg> Exclusiva App</span>
+      <div class="card-name">Mac. Nissin Lamen 85g Bacon</div>
+      <div class="price-row">
+        <span class="price-current offer">R$ 2,79</span>
+        <span class="price-discount">12% OFF</span>
+      </div>
+      <div class="price-row">
+        <span class="price-old">R$ 3,18</span>
+        <span class="price-unit">/UN</span>
+      </div>
+      <div class="card-meta">
+        <span>172 em estoque</span>
+        <span>EAN 7891079000250</span>
+      </div>
+      <button class="card-cta">
+        <svg data-lucide="plus" style="width:16px;height:16px"></svg> Adicionar
+      </button>
+    </div>
+  </div>
+
+  <!-- Card: Oferta da Semana -->
+  <div class="card" data-entering data-entering-active>
+    <img class="card-image" src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/d85d344b-4c1a-47e6-938c-e55d8a57c5ba.jpg" alt="Requeijao Vigor">
+    <div class="card-body">
+      <span class="badge badge-weekly"><svg data-lucide="zap"></svg> Oferta da Semana</span>
+      <div class="card-name">Requeijao Vigor 200g Tradicional</div>
+      <div class="price-row">
+        <span class="price-current offer">R$ 7,99</span>
+        <span class="price-discount">11% OFF</span>
+      </div>
+      <div class="price-row">
+        <span class="price-old">R$ 8,98</span>
+        <span class="price-unit">/UN</span>
+      </div>
+      <div class="card-meta">
+        <span>276 em estoque</span>
+        <span>ID 3150</span>
+      </div>
+      <button class="card-cta">
+        <svg data-lucide="plus" style="width:16px;height:16px"></svg> Adicionar
+      </button>
+    </div>
+  </div>
+
+  <!-- Card: OOS -->
+  <div class="card oos" data-entering data-entering-active>
+    <img class="card-image" src="https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250/58053fef-6fb4-4c84-bf03-de387b8df63f.jpg" alt="Chave Teste">
+    <div class="card-body">
+      <div class="card-name">Chave Teste Tramontina Master 1/8x3</div>
+      <div class="price-row">
+        <span class="price-current">R$ 16,97</span>
+        <span class="price-unit">/UN</span>
+      </div>
+      <div class="card-meta">
+        <span class="oos-label">Indisponivel</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>lucide.createIcons()</script>
+</body>
+</html>

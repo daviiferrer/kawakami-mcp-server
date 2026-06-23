@@ -9,7 +9,13 @@ token_manager.load()
 
 
 def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
-    mcp = FastMCP("Kawakami Supermercados", host=host, port=port)
+    mcp = FastMCP(
+        "Kawakami Supermercados",
+        host=host,
+        port=port,
+        instructions="Servidor MCP do Supermercados Kawakami. Busque produtos, compare precos, "
+        "monte carrinho de compras e salve listas. CEP padrao: 19700000 (Paraguacu Paulista).",
+    )
 
     from src.tools.busca import buscar_produtos, buscar_por_ean
     from src.tools.catalogo import listar_departamentos, produtos_por_departamento, detalhes_produto
@@ -37,6 +43,7 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
 
 
 async def health_check() -> dict:
+    """Verifica se o servidor e a API VIP Commerce estao funcionando."""
     status = "ok"
     vip = "reachable"
     try:
@@ -45,4 +52,3 @@ async def health_check() -> dict:
         vip = "unreachable"
         status = "degraded"
     return {"status": status, "vip_commerce": vip}
-

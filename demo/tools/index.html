@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kawakami</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+:root {
+  --bg: #212121; --surface: #2f2f2f; --surface2: #3a3a3a; --border: #424242;
+  --text: #ececec; --text2: #9e9e9e; --text3: #6e6e6e;
+  --brand: #138d45; --brand-light: #2dd36f; --orange: #f97316; --danger: #dc2626;
+  --ease: cubic-bezier(.19,1,.22,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+
+/* CAROUSEL */
+.carousel{display:flex;gap:10px;overflow-x:auto;padding:0 16px 24px;scroll-snap-type:x mandatory}
+.carousel::-webkit-scrollbar{display:none}
+
+/* Tablet+ (576px): remove scroll snap, allow wrap */
+@media(min-width:576px){
+  .carousel{flex-wrap:wrap;overflow-x:visible;scroll-snap-type:none;justify-content:center}
+  .card{scroll-snap-align:none}
+}
+/* Desktop (768px+): more spacing */
+@media(min-width:768px){
+  .carousel{gap:12px;padding:0 16px 32px}
+}
+/* Large (1024px+): wider cards */
+@media(min-width:1024px){
+  .card{min-width:240px;max-width:240px}
+  .card-img{height:160px}
+}
+
+/* CARD */
+.card{min-width:210px;max-width:210px;flex-shrink:0;scroll-snap-align:start;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.card-img{position:relative;background:var(--surface2);display:flex;justify-content:center;align-items:center;height:140px;border-bottom:1px solid var(--border)}
+.card-img img{max-height:100px;max-width:90%;object-fit:contain}
+.card-badge{position:absolute;top:8px;left:8px;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;color:#fff;letter-spacing:.02em}
+.bg-exclusive{background:#2f3138}.bg-club{background:var(--orange)}.bg-weekly{background:var(--brand)}
+.card-body{padding:10px 12px 12px;display:flex;flex-direction:column;flex:1}
+.card-name{font-size:14px;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px;min-height:38px}
+.card-stock{font-size:10px;color:var(--text3);margin-bottom:8px}
+.card-bottom{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end}
+.card-prices{white-space:nowrap}
+.card-old{font-size:10px;color:var(--text3);text-decoration:line-through;display:block}
+.card-price{font-size:18px;font-weight:700;line-height:1.1}
+.card-price.offer{color:var(--brand-light)}
+.card-unit{font-size:10px;color:var(--text3)}
+
+.btn-add{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:3px;white-space:nowrap;transition:border-color .2s,color .2s}
+.btn-add:hover{border-color:var(--brand);color:var(--brand-light)}
+.btn-add.added{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* PIP */
+.pip{position:fixed;bottom:20px;right:20px;z-index:50;width:52px;height:52px;background:var(--brand);border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.3);opacity:0;transform:scale(.5);pointer-events:none;transition:opacity .25s,transform .25s}
+.pip.on{opacity:1;transform:scale(1);pointer-events:auto}
+.pip svg{color:#fff;width:24px;height:24px}
+.pip-n{position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;min-width:22px;height:22px;border-radius:11px;font-size:12px;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px;border:2px solid var(--bg)}
+@keyframes pop{0%,100%{transform:scale(1)}40%{transform:scale(1.4)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;padding:9px 16px;border-radius:20px;font-size:12px;font-weight:600;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
+.toast.on{opacity:1}
+
+/* DRAWER */
+.drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;opacity:0;pointer-events:none;transition:opacity .35s}
+.drawer-bg.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;bottom:0;left:0;right:0;background:var(--surface);z-index:100;transform:translateY(100%);transition:transform .35s var(--ease);display:flex;flex-direction:column;max-height:90vh}
+.drawer.on{transform:translateY(0)}
+@media(min-width:640px){.drawer{max-width:480px;left:50%;right:auto;transform:translate(-50%,100%);border-radius:16px 16px 0 0}.drawer.on{transform:translate(-50%,0)}}
+.drawer-h{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.drawer-h h2{font-size:18px;font-weight:700}
+.drawer-close{background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;display:flex}
+.drawer-list{flex:1;overflow-y:auto;padding:0 16px}
+
+.d-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.d-item:last-child{border-bottom:none}
+.d-img{width:52px;height:52px;object-fit:contain;background:var(--surface2);border-radius:8px;border:1px solid var(--border);flex-shrink:0}
+.d-info{flex:1;min-width:0}
+.d-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.d-qty{display:flex;align-items:center;gap:6px;margin-top:6px}
+.d-qty button{width:26px;height:26px;border:1px solid var(--border);background:transparent;border-radius:6px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:14px}
+.d-qty span{min-width:22px;text-align:center;font-size:14px;font-weight:700}
+.d-price{text-align:right;flex-shrink:0}
+.d-price-cur{font-size:16px;font-weight:700}.d-price-cur.offer{color:var(--brand-light)}
+.d-price-old{font-size:10px;color:var(--text3);text-decoration:line-through}
+.d-remove{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;display:flex}
+
+.drawer-foot{padding:16px;border-top:2px solid var(--brand);flex-shrink:0}
+.drawer-foot-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.drawer-foot-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2)}
+.drawer-foot-count{font-size:12px;color:var(--text3)}
+.drawer-foot-total{font-size:24px;font-weight:700;color:var(--brand-light)}
+.btn-checkout{width:100%;padding:15px;background:var(--brand);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-checkout:hover{background:#0e6933}
+
+/* EMPTY */
+.empty{padding:48px 16px;text-align:center;color:var(--text3);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.empty svg{opacity:.3;width:48px;height:48px}
+
+/* TITLE */
+.section-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:16px}
+
+/* SVG icons inline */
+.icon{display:inline-block;vertical-align:middle;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const { createElement: h, useState, useEffect, useCallback, useRef, Fragment } = React;
+const { createRoot } = ReactDOM;
+
+// SVG icon components (Lucide-style)
+const Icons = {
+  plus: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+  check: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  minus: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>',
+  x: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+  cart: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>',
+  credit: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>',
+  trash: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
+  zap: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+};
+function Icon({ name, size = 16 }) {
+  const svg = Icons[name]?.replace('width="16"', `width="${size}"`).replace('height="16"', `height="${size}"`)
+              || Icons[name]?.replace('width="24"', `width="${size}"`).replace('height="24"', `height="${size}"`)
+              || Icons[name]?.replace('width="20"', `width="${size}"`).replace('height="20"', `height="${size}"`);
+  return h('span', { className: 'icon', dangerouslySetInnerHTML: { __html: svg || '' }, style: { width: size, height: size } });
+}
+
+const IMG = 'https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250';
+
+const PRODUCTS = [
+  {id:285,n:"Mac. Nissin Lamen 85g Bacon",p:3.18,po:2.79,pa:3.18,tag:"exclusive",tn:"Exclusiva App",un:"UN",img:"6699785a-5a94-4a14-ad57-6094f8de5afc.jpg",s:172},
+  {id:9522,n:"Sabao Po Omo 1,6kg Puro Cuidado",p:26.38,po:18.99,pa:26.38,tag:"club",tn:"Clube Amigo",un:"UN",img:"c0f9116a-a928-4dc6-823c-fbc925c28bb2.jpg",s:130},
+  {id:3150,n:"Requeijao Vigor 200g Tradicional",p:8.98,po:7.99,pa:8.98,tag:"weekly",tn:"Oferta Semana",un:"UN",img:"d85d344b-4c1a-47e6-938c-e55d8a57c5ba.jpg",s:276},
+  {id:2768,n:"Linguica Calabresa Seara 500g",p:14.95,po:11.95,pa:14.95,tag:"club",tn:"Clube Amigo",un:"KG",img:"055d7c00-d167-4a31-bbaf-8eb4de563b1d.jpg",s:1370},
+  {id:16491,n:"Espumante Novecentos 750ml",p:45.90,po:9.99,pa:45.90,tag:"club",tn:"Clube Amigo",un:"UN",img:"c6099a4b-e6d1-4c3a-b814-0b10b8b4b231.jpg",s:232},
+  {id:2388,n:"Laranja Pera Rio 1kg",p:2.42,po:1.89,pa:2.42,tag:"club",tn:"Clube Amigo",un:"KG",img:"0b421732-a522-48d8-b0eb-cc2daec76219.jpg",s:6},
+  {id:2428,n:"Cenoura Extra 1kg",p:8.21,po:6.69,pa:8.21,tag:"club",tn:"Clube Amigo",un:"KG",img:"f4d60aac-e3d5-494e-8119-457ce7cce9d6.jpg",s:3},
+  {id:11988,n:"Brocolis Chines",p:8.05,po:6.29,pa:8.05,tag:"club",tn:"Clube Amigo",un:"UN",img:"ba0ae71e-271c-469e-892d-b7f6e3d2d1fe.jpg",s:6},
+];
+const OFFERS = PRODUCTS.filter(p=>p.po).sort((a,b)=>(1-b.po/b.pa)-(1-a.po/a.pa));
+const fmt = n => 'R$ ' + n.toFixed(2).replace('.',',');
+const pr = p => p.po ?? p.p;
+
+function App() {
+  const [cart, setCart] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState({ msg: '', on: false });
+  const tt = useRef(null);
+
+  const show = useCallback(msg => {
+    clearTimeout(tt.current);
+    setToast({ msg, on: true });
+    tt.current = setTimeout(() => setToast(t => ({ ...t, on: false })), 2000);
+  }, []);
+
+  const add = useCallback(id => {
+    const p = PRODUCTS.find(x => x.id === id); if (!p) return;
+    setCart(prev => {
+      const ex = prev.find(x => x.id === id);
+      if (ex) return prev.map(x => x.id === id ? { ...x, q: x.q + 1, s: (x.q + 1) * x.u } : x);
+      return [...prev, { id: p.id, n: p.n, u: pr(p), q: 1, s: pr(p), un: p.un, img: p.img, o: !!p.po, pa: p.pa }];
+    });
+    show(p.n);
+  }, [show]);
+
+  const rm = useCallback(id => { setCart(prev => prev.filter(x => x.id !== id)); }, []);
+  const ch = useCallback((id, d) => {
+    setCart(prev => {
+      const item = prev.find(x => x.id === id); if (!item) return prev;
+      const nq = item.q + d;
+      if (nq <= 0) return prev.filter(x => x.id !== id);
+      return prev.map(x => x.id === id ? { ...x, q: nq, s: nq * x.u } : x);
+    });
+  }, []);
+
+  const total = cart.reduce((s, c) => s + c.s, 0);
+  const units = cart.reduce((s, c) => s + c.q, 0);
+  const tagClass = { exclusive: 'bg-exclusive', club: 'bg-club', weekly: 'bg-weekly' };
+
+  return h(Fragment, null,
+    h('div', { className: 'section-title' }, 'Ofertas do Dia'),
+    h('div', { className: 'carousel' },
+      ...OFFERS.map(p => {
+        const added = cart.some(c => c.id === p.id);
+        return h('div', { key: p.id, className: 'card' },
+          h('div', { className: 'card-img' },
+            p.tn && h('span', { className: `card-badge ${tagClass[p.tag]}` }, p.tn),
+            h('img', { src: `${IMG}/${p.img}`, alt: p.n, loading: 'lazy' })
+          ),
+          h('div', { className: 'card-body' },
+            h('p', { className: 'card-name' }, p.n),
+            h('p', { className: 'card-stock' }, `${p.s} em estoque`),
+            h('div', { className: 'card-bottom' },
+              h('div', { className: 'card-prices' },
+                p.pa && h('span', { className: 'card-old' }, fmt(p.pa)),
+                h('span', { className: `card-price ${p.po ? 'offer' : ''}` }, fmt(pr(p))),
+                h('span', { className: 'card-unit' }, `/${p.un}`)
+              ),
+              h('button', { className: `btn-add ${added ? 'added' : ''}`, onClick: () => add(p.id) },
+                h(Icon, { name: added ? 'check' : 'plus', size: 13 }),
+                ' Adicionar'
+              )
+            )
+          )
+        );
+      })
+    ),
+
+    // PIP
+    h('button', { className: `pip ${cart.length ? 'on' : ''}`, onClick: () => setOpen(true) },
+      h(Icon, { name: 'cart', size: 24 }),
+      h('span', { className: 'pip-n', style: { display: units > 0 ? 'flex' : 'none' } }, units)
+    ),
+
+    // TOAST
+    h('div', { className: `toast ${toast.on ? 'on' : ''}` },
+      h(Icon, { name: 'check', size: 14 }),
+      toast.msg
+    ),
+
+    // DRAWER
+    h('div', { className: `drawer-bg ${open ? 'on' : ''}`, onClick: () => setOpen(false) }),
+    h('div', { className: `drawer ${open ? 'on' : ''}` },
+      h('div', { className: 'drawer-h' },
+        h('h2', null, 'Carrinho'),
+        h('button', { className: 'drawer-close', onClick: () => setOpen(false) }, h(Icon, { name: 'x', size: 20 }))
+      ),
+      h('div', { className: 'drawer-list' },
+        cart.length === 0
+          ? h('div', { className: 'empty' }, h(Icon, { name: 'cart', size: 48 }), 'Carrinho vazio')
+          : cart.map(c => h('div', { key: c.id, className: 'd-item' },
+              h('img', { className: 'd-img', src: `${IMG}/${c.img}`, alt: c.n }),
+              h('div', { className: 'd-info' },
+                h('div', { className: 'd-name' }, c.n),
+                h('div', { className: 'd-meta' }, `${fmt(c.u)}/${c.un}`),
+                h('div', { className: 'd-qty' },
+                  h('button', { onClick: () => ch(c.id, -1) }, h(Icon, { name: 'minus', size: 14 })),
+                  h('span', null, c.q),
+                  h('button', { onClick: () => ch(c.id, 1) }, h(Icon, { name: 'plus', size: 14 }))
+                )
+              ),
+              h('div', { className: 'd-price' },
+                h('div', { className: `d-price-cur ${c.o ? 'offer' : ''}` }, fmt(c.s)),
+                c.o && c.pa && h('div', { className: 'd-price-old' }, fmt(c.pa * c.q))
+              ),
+              h('button', { className: 'd-remove', onClick: () => rm(c.id) }, h(Icon, { name: 'trash', size: 14 }))
+            ))
+      ),
+      h('div', { className: 'drawer-foot' },
+        h('div', { className: 'drawer-foot-row' },
+          h('div', null,
+            h('div', { className: 'drawer-foot-label' }, 'Total'),
+            h('div', { className: 'drawer-foot-count' }, `${units} unidade${units !== 1 ? 's' : ''}`)
+          ),
+          h('div', { className: 'drawer-foot-total' }, fmt(total))
+        ),
+        h('button', { className: 'btn-checkout' },
+          h(Icon, { name: 'credit', size: 20 }), ' Finalizar Compra'
+        )
+      )
+    )
+  );
+}
+
+createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>

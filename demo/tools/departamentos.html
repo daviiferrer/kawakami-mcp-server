@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>listar_departamentos</title>
+<style>
+:root{--green:#138d45;--dark:#2f3138;--muted:#545454;--border:#e8e4dd;--bg:#fff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--dark);max-width:480px;margin:0 auto}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);padding:1px}
+.cell{background:var(--bg);padding:18px 14px;animation:fadeIn .3s ease-out both}
+.cell:nth-child(1){animation-delay:0s}.cell:nth-child(2){animation-delay:.03s}
+.cell:nth-child(3){animation-delay:.06s}.cell:nth-child(4){animation-delay:.09s}
+.cell:nth-child(5){animation-delay:.12s}.cell:nth-child(6){animation-delay:.15s}
+.cell:nth-child(7){animation-delay:.18s}.cell:nth-child(8){animation-delay:.21s}
+.cell:nth-child(9){animation-delay:.24s}.cell:nth-child(10){animation-delay:.27s}
+.cell:nth-child(11){animation-delay:.3s}.cell:nth-child(12){animation-delay:.33s}
+.cell-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.cell-count{font-size:12px;color:var(--muted)}
+.cell-offers{font-size:10px;font-weight:600;color:var(--green);margin-top:2px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="cell"><div class="cell-name">Bebidas</div><div class="cell-count">1.399 produtos</div><div class="cell-offers">41 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Carnes</div><div class="cell-count">547 produtos</div><div class="cell-offers">16 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Frios e Laticinios</div><div class="cell-count">1.416 produtos</div><div class="cell-offers">49 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Hortifruti</div><div class="cell-count">216 produtos</div><div class="cell-offers">6 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Limpeza</div><div class="cell-count">2.139 produtos</div><div class="cell-offers">37 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Mercearia</div><div class="cell-count">1.874 produtos</div><div class="cell-offers">28 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Perfumaria e Higiene</div><div class="cell-count">4.595 produtos</div><div class="cell-offers">114 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Animais</div><div class="cell-count">342 produtos</div><div class="cell-offers">34 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Padaria</div><div class="cell-count">356 produtos</div><div class="cell-offers">5 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Biscoito e Chocolate</div><div class="cell-count">1.840 produtos</div><div class="cell-offers">9 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Cereais e Farinaceos</div><div class="cell-count">475 produtos</div><div class="cell-offers">8 ofertas</div></div>
+  <div class="cell"><div class="cell-name">Congelados</div><div class="cell-count">382 produtos</div><div class="cell-offers">1 oferta</div></div>
+</div>
+</body>
+</html>
