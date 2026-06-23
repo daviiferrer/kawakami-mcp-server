@@ -21,6 +21,7 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
     token_verifier = None
     auth_settings = None
     if settings.auth0_domain:
+        token_verifier = Auth0TokenVerifier()
         from mcp.server.auth.settings import AuthSettings
 
         issuer = f"https://{settings.auth0_domain}/"
@@ -34,6 +35,7 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
         "Kawakami Supermercados",
         host=host,
         port=port,
+        token_verifier=token_verifier,
         auth=auth_settings,
         instructions="Servidor MCP do Supermercados Kawakami. Busque produtos, compare precos, "
         "monte carrinho de compras e salve listas. CEP padrao: 19700000 (Paraguacu Paulista).",
@@ -189,47 +191,4 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
     async def health_check(_: Request) -> JSONResponse:
         return JSONResponse({"status": "ok"})
 
-    @mcp.custom_route(
-        "/.well-known/oauth-protected-resource",
-        methods=["GET"],
-        include_in_schema=False,
-    )
-    async def oauth_metadata(_: Request) -> JSONResponse:
-        if not settings.auth0_domain:
-            return JSONResponse({"error": "OAuth not configured"}, status_code=404)
-        return JSONResponse({
-            "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
-            "authorization_servers": [f"https://{settings.auth0_domain}/"],
-            "scopes_supported": ["cart:read", "cart:write"],
-        })
-
-    @mcp.custom_route(
-        "/.well-known/oauth-protected-resource/mcp",
-        methods=["GET"],
-        include_in_schema=False,
-    )
-    async def oauth_metadata_mcp(_: Request) -> JSONResponse:
-        if not settings.auth0_domain:
-            return JSONResponse({"error": "OAuth not configured"}, status_code=404)
-        return JSONResponse({
-            "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
-            "authorization_servers": [f"https://{settings.auth0_domain}/"],
-            "scopes_supported": ["cart:read", "cart:write"],
-        })
-
-    # Inject Bearer token into context for tool-level auth checks
-    app = mcp.streamable_http_app()
-    from starlette.middleware.base import BaseHTTPMiddleware
-    from src.infrastructure.auth_required import set_auth_token
-
-    class AuthTokenMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            auth_header = request.headers.get("Authorization", "")
-            token = None
-            if auth_header.startswith("Bearer "):
-                token = auth_header[7:]
-            set_auth_token(token)
-            return await call_next(request)
-
-    app.add_middleware(AuthTokenMiddleware)
-    return app
+    return mcp

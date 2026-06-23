@@ -1,7 +1,8 @@
 import jwt
 from mcp.types import CallToolResult
+from mcp.server.auth.middleware.auth_context import get_access_token
 
-from src.infrastructure.auth_required import get_auth_token, require_auth
+from src.infrastructure.auth_required import require_auth
 from src.infrastructure.error_handler import safe_tool
 from src.infrastructure.session_store import session_store
 from src.presentation.structured import session_result
@@ -13,11 +14,11 @@ async def criar_sessao() -> CallToolResult:
     auth_err = require_auth()
     if auth_err is not None:
         return auth_err
-    token = get_auth_token()
+    token = get_access_token()
     user_id = None
-    if token:
+    if token and token.token:
         try:
-            claims = jwt.decode(token, options={"verify_signature": False})
+            claims = jwt.decode(token.token, options={"verify_signature": False})
             user_id = claims.get("sub", "")
         except Exception:
             user_id = None
