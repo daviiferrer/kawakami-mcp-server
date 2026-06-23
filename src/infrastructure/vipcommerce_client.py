@@ -165,6 +165,7 @@ class VipCommerceClient:
         )
         page = 1
         page_size = min(max(limit, 1), 500)
+        max_pages = 5 if only_offers else 1000
         produtos: list[Produto] = []
         paginator: dict = {}
 
@@ -179,7 +180,7 @@ class VipCommerceClient:
             paginator = data.get("paginator", {})
             total_pages = int(paginator.get("total_pages", page))
 
-            if page >= total_pages or not page_products:
+            if page >= total_pages or not page_products or page >= max_pages:
                 break
             if only_offers:
                 if len([p for p in produtos if p.em_oferta]) >= limit:
@@ -219,6 +220,11 @@ class VipCommerceClient:
         return None
 
     async def get_best_offers(self, limit: int = 50, cep: str = "") -> list[Produto]:
+        cache_key = f"offers:{cep}:{limit}"
+        cached = self._search_cache.get(cache_key)
+        if cached:
+            return cached
+
         depts = await self.get_departments(cep=cep)
         tasks = [
             self.get_products_by_department(
@@ -253,7 +259,9 @@ class VipCommerceClient:
             raise VipCommerceUnavailableError("Falha ao consultar todos os departamentos.")
 
         all_offers.sort(key=lambda p: p.oferta.desconto_pct if p.oferta else 0, reverse=True)
-        return all_offers[:limit]
+        result = all_offers[:limit]
+        self._search_cache.set(cache_key, result)
+        return result
 
     def clear_cache(self) -> None:
         self._dept_cache = None
