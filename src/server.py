@@ -119,24 +119,28 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
         title="Adicionar ao carrinho",
         description="Use esta tool para definir a quantidade de um produto no carrinho.",
         annotations=write,
+        meta=WIDGET_TOOL_META,
         structured_output=False,
     )(adicionar_ao_carrinho)
     mcp.tool(
         title="Ver carrinho",
         description="Use esta tool para consultar o carrinho de uma sessão.",
         annotations=read_only,
+        meta=WIDGET_TOOL_META,
         structured_output=False,
     )(ver_carrinho)
     mcp.tool(
         title="Remover do carrinho",
         description="Use esta tool para remover um produto do carrinho.",
         annotations=destructive,
+        meta=WIDGET_TOOL_META,
         structured_output=False,
     )(remover_do_carrinho)
     mcp.tool(
         title="Limpar carrinho",
         description="Use esta tool para remover todos os produtos do carrinho.",
         annotations=destructive,
+        meta=WIDGET_TOOL_META,
         structured_output=False,
     )(limpar_carrinho)
     mcp.tool(
