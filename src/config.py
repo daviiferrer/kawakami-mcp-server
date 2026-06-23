@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     # Defaults
     default_cep: str = "19700000"
+    default_cd_id: int = 9  # distribution center: 9=Paraguacu Paulista, 1=Marilia
 
     # Image CDN
     img_base_url: str = "https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250"

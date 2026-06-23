@@ -136,6 +136,7 @@ class VipCommerceClient:
                         id=d.get("classificacao_mercadologica_id", 0),
                         nome=d.get("descricao", ""),
                         total_ofertas=d.get("total_ofertas", 0),
+                        total_produtos=d.get("total_produtos", 0),
                     )
                 )
         self._dept_cache = depts
