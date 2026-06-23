@@ -18,9 +18,15 @@ const TAG_CLASSES = {
 export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
   const price = activePrice(product)
   const tagClass = product.tag ? TAG_CLASSES[product.tag] : ""
+  const actionLabel = isInCart
+    ? `Adicionar mais uma unidade de ${product.name}`
+    : `Adicionar ${product.name} ao carrinho`
+  const actionClass = isInCart
+    ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500 dark:text-zinc-950"
+    : "border-zinc-300 bg-transparent text-emerald-700 hover:border-emerald-600 hover:bg-emerald-50 dark:border-zinc-700 dark:text-emerald-400 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/60"
 
   return (
-    <article className="min-w-[210px] max-w-[210px] flex-shrink-0 snap-start overflow-hidden rounded-xl border border-zinc-200 bg-white text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+    <article className="min-w-[210px] max-w-[210px] flex-shrink-0 snap-start overflow-hidden rounded-2xl border border-zinc-200 bg-white text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
       <div className="relative flex h-[140px] items-center justify-center border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
         <img
           src={`${IMG_BASE}/${product.image}`}
@@ -53,10 +59,11 @@ export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
             type="button"
             disabled={isLoading}
             onClick={() => onAdd(product)}
-            className="inline-flex items-center gap-1 rounded-lg border border-emerald-600 px-2.5 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-950"
+            aria-label={actionLabel}
+            title={actionLabel}
+            className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-wait disabled:opacity-50 ${actionClass}`}
           >
-            {isInCart ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
-            Adicionar
+            {isInCart ? <Check className="size-4" /> : <Plus className="size-4" />}
           </button>
         </div>
       </div>

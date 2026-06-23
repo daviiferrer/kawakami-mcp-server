@@ -131,7 +131,7 @@ export function App() {
   }
 
   return (
-    <main className="min-h-dvh bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100">
+    <main className="min-h-dvh bg-transparent text-zinc-950 dark:text-zinc-100">
       {connectionError && (
         <p className="mx-4 mt-4 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
           {connectionError}

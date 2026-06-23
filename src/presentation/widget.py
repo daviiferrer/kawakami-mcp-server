@@ -3,7 +3,7 @@ from pathlib import Path
 
 from src.config import settings
 
-WIDGET_URI = "ui://kawakami/catalog-v1.html"
+WIDGET_URI = "ui://kawakami/catalog-v2.html"
 WIDGET_MIME_TYPE = "text/html;profile=mcp-app"
 WIDGET_DIST_DIR = Path(__file__).resolve().parents[2] / "ui" / "dist"
 IMAGE_DOMAIN = "https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com"
@@ -15,7 +15,7 @@ WIDGET_TOOL_META = {
 
 WIDGET_RESOURCE_META = {
     "ui": {
-        "prefersBorder": True,
+        "prefersBorder": False,
         "domain": settings.widget_domain,
         "csp": {
             "connectDomains": [],
