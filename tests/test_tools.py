@@ -40,7 +40,8 @@ class TestSearchProducts:
 class TestCartTools:
     @pytest.mark.asyncio
     async def test_adicionar_ao_carrinho(self, mock_vip_client):
-        with patch("src.tools.carrinho.vip_client", mock_vip_client):
+        with patch("src.tools.carrinho.vip_client", mock_vip_client), \
+             patch("src.infrastructure.auth_required.require_auth", return_value=None):
             from src.infrastructure.session_store import session_store
             from src.tools.carrinho import adicionar_ao_carrinho, ver_carrinho
 
@@ -55,7 +56,8 @@ class TestCartTools:
 
     @pytest.mark.asyncio
     async def test_limpar_carrinho(self, mock_vip_client):
-        with patch("src.tools.carrinho.vip_client", mock_vip_client):
+        with patch("src.tools.carrinho.vip_client", mock_vip_client), \
+             patch("src.infrastructure.auth_required.require_auth", return_value=None):
             from src.infrastructure.session_store import session_store
             from src.tools.carrinho import adicionar_ao_carrinho, limpar_carrinho, ver_carrinho
 

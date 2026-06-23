@@ -10,9 +10,13 @@ from src.presentation.structured import session_result
 @safe_tool
 async def criar_sessao() -> CallToolResult:
     """Cria uma sessao isolada para carrinho e listas."""
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err
     token = get_access_token()
     user_id = None
-    if token:
+    if token and token.token:
         try:
             claims = jwt.decode(token.token, options={"verify_signature": False})
             user_id = claims.get("sub", "")

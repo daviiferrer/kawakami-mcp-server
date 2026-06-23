@@ -42,6 +42,10 @@ async def salvar_lista(
     itens: str,
     cep: str = settings.default_cep,
 ) -> str:
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
     nome = validate_nome_lista(nome)
     items_raw = [sanitize_term(i) for i in itens.split(",") if i.strip()]
     items_list = [i for i in items_raw if i]
@@ -67,12 +71,20 @@ async def salvar_lista(
 
 @safe_tool
 async def minhas_listas(session_id: str) -> str:
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
     listas = session_store.get_all_lists(session_id)
     return format_saved_lists_summary(listas, session_id)
 
 
 @safe_tool
 async def ver_lista(session_id: str, nome: str) -> str:
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
     nome = validate_nome_lista(nome)
     lista = session_store.get_list(session_id, nome)
     if not lista:
@@ -82,6 +94,10 @@ async def ver_lista(session_id: str, nome: str) -> str:
 
 @safe_tool
 async def excluir_lista(session_id: str, nome: str) -> str:
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
     nome = validate_nome_lista(nome)
     if session_store.delete_list(session_id, nome):
         return f"Lista '{nome}' excluida."

@@ -17,6 +17,12 @@ async def adicionar_ao_carrinho(
     cep: str = settings.default_cep,
     quantidade: int = 1,
 ) -> CallToolResult | str:
+    from src.infrastructure.auth_required import require_auth
+
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err
+
     termo = sanitize_term(termo)
     if not termo:
         return "Digite um produto valido para adicionar ao carrinho."
@@ -54,12 +60,20 @@ async def adicionar_ao_carrinho(
 
 @safe_tool
 async def ver_carrinho(session_id: str) -> CallToolResult:
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err
     cart = session_store.get_cart(session_id)
     return cart_result(format_cart(cart), session_id=session_id, cart=cart)
 
 
 @safe_tool
 async def remover_do_carrinho(session_id: str, termo: str) -> CallToolResult | str:
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err
     termo = sanitize_term(termo)
     if not termo:
         return "Digite o nome do produto a remover."
@@ -82,5 +96,9 @@ async def remover_do_carrinho(session_id: str, termo: str) -> CallToolResult | s
 
 @safe_tool
 async def limpar_carrinho(session_id: str) -> CallToolResult:
+    from src.infrastructure.auth_required import require_auth
+    auth_err = require_auth()
+    if auth_err is not None:
+        return auth_err
     session_store.clear_cart(session_id)
     return cart_result("Carrinho esvaziado.", session_id=session_id, cart=[])

@@ -22,6 +22,14 @@ class Auth0TokenVerifier(TokenVerifier):
         self._issuer = f"https://{settings.auth0_domain}/"
 
     async def verify_token(self, token: str) -> AccessToken | None:
+        if not token or token.strip() == "":
+            return AccessToken(
+                token="",
+                client_id="anonymous",
+                scopes=[],
+                expires_at=None,
+                resource="",
+            )
         try:
             signing_key = self._jwks.get_signing_key_from_jwt(token)
             claims = jwt.decode(
