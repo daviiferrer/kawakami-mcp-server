@@ -1,0 +1,32 @@
+{
+  "name": "Kawakami Supermercados",
+  "slogan": "Tem Sempre mais pra voce",
+  "colors": {
+    "primary": "#138d45",
+    "primary_dark": "#005e1b",
+    "secondary": "#a5c83f",
+    "white": "#ffffff",
+    "dark": "#2f3138",
+    "gray": "#545454",
+    "light_gray": "#f0f3ff",
+    "border": "#e5e7eb"
+  },
+  "offer_tags": {
+    "exclusiva-do-app-e-site": { "bg": "#2f3138", "color": "#ffffff", "label": "Exclusiva do App e Site" },
+    "clube-amigo": { "bg": "#f97316", "color": "#ffffff", "label": "Clube Amigo" },
+    "oferta-da-semana": { "bg": "#138d45", "color": "#ffffff", "label": "Oferta da Semana" }
+  },
+  "fonts": {
+    "primary": "Roboto, sans-serif",
+    "price": "Roboto, sans-serif"
+  },
+  "product_card": {
+    "width": "280px",
+    "border_radius": "8px",
+    "shadow": "0 2px 8px rgba(0,0,0,0.1)",
+    "image_size": "200px",
+    "price_font_size": "20px",
+    "offer_price_font_size": "24px",
+    "old_price_font_size": "14px"
+  }
+}

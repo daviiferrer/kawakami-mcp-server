@@ -1,0 +1,196 @@
+import asyncio
+import logging
+import time as time_module
+from typing import Optional
+
+import httpx
+
+from src.config import settings
+from src.domain.models import Produto, Departamento
+from src.domain.exceptions import VipCommerceUnavailableError
+from src.infrastructure.auth import token_manager, TokenExpiredError
+from src.infrastructure.circuit_breaker import CircuitBreaker
+
+logger = logging.getLogger(__name__)
+
+
+class _SearchCache:
+    def __init__(self, ttl: float = 300) -> None:
+        self._data: dict[str, tuple[list[Produto], float]] = {}
+        self._ttl = ttl
+
+    def get(self, key: str) -> Optional[list[Produto]]:
+        if key in self._data:
+            produtos, ts = self._data[key]
+            if time_module.monotonic() - ts < self._ttl:
+                return produtos
+            del self._data[key]
+        return None
+
+    def set(self, key: str, produtos: list[Produto]) -> None:
+        self._data[key] = (produtos, time_module.monotonic())
+
+    def clear(self) -> None:
+        self._data.clear()
+
+
+class VipCommerceClient:
+    def __init__(self) -> None:
+        self._client = httpx.AsyncClient(
+            timeout=httpx.Timeout(settings.vip_timeout_connect, read=settings.vip_timeout_read),
+            headers=token_manager.headers,
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
+        )
+        self._dept_cache: Optional[list[Departamento]] = None
+        self._dept_cache_ts: float = 0.0
+        self._search_cache = _SearchCache(ttl=300)
+        self._breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60.0)
+
+    def _build_url(self, path: str) -> str:
+        return f"{settings.vip_base_url}/filial/1/centro_distribuicao/{settings.default_cd_id}/loja{path}"
+
+    async def _request(
+        self, url: str, params: Optional[dict] = None, retries: int | None = None
+    ) -> httpx.Response:
+        if not self._breaker.allow_request():
+            raise VipCommerceUnavailableError(
+                "VIP Commerce temporariamente indisponivel. Tente novamente em breve."
+            )
+
+        max_retries = retries if retries is not None else settings.retry_max_attempts
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                resp = await self._client.get(url, params=params)
+                if resp.status_code == 401:
+                    refreshed = await token_manager.refresh()
+                    if refreshed and attempt < max_retries - 1:
+                        continue
+                    raise TokenExpiredError("Token refresh failed")
+                if resp.status_code in (502, 503, 504):
+                    raise VipCommerceUnavailableError(
+                        f"VIP Commerce returned {resp.status_code}"
+                    )
+                resp.raise_for_status()
+                self._breaker.record_success()
+                logger.debug("VIP request OK: %s", url)
+                return resp
+            except (httpx.ConnectError, httpx.ReadError, httpx.RemoteProtocolError) as e:
+                last_error = e
+                logger.warning("VIP request attempt %d failed: %s", attempt + 1, str(e)[:100])
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(settings.retry_backoff_base**attempt)
+            except VipCommerceUnavailableError as e:
+                last_error = e
+                logger.warning("VIP unavailable (attempt %d): %s", attempt + 1, str(e))
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(settings.retry_backoff_base**attempt)
+
+        self._breaker.record_failure()
+        raise last_error or VipCommerceUnavailableError("Max retries exceeded")
+
+    async def search_products(self, termo: str, page: int = 1) -> tuple[list[Produto], dict]:
+        if page == 1:
+            cache_key = f"search:{termo.lower()}"
+            cached = self._search_cache.get(cache_key)
+            if cached:
+                return cached, {"total_items": len(cached), "page": 1, "total_pages": 1}
+
+        url = self._build_url(f"/buscas/produtos/termo/{termo}")
+        resp = await self._request(url, params={"page": page})
+        data = resp.json()
+        produtos_raw = data.get("data", {}).get("produtos", data.get("data", []))
+        produtos = [Produto.from_api(p) for p in produtos_raw]
+        paginator = data.get("paginator", {})
+
+        if page == 1 and produtos:
+            self._search_cache.set(f"search:{termo.lower()}", produtos)
+
+        return produtos, paginator
+
+    async def get_departments(self) -> list[Departamento]:
+        now = time_module.monotonic()
+        if self._dept_cache and (now - self._dept_cache_ts) < 3600:
+            return self._dept_cache
+
+        url = self._build_url("/classificacoes_mercadologicas/departamentos/arvore")
+        resp = await self._request(url)
+        data = resp.json()
+        depts = []
+        if data.get("success") and data.get("data"):
+            for d in data["data"]:
+                depts.append(
+                    Departamento(
+                        id=d.get("classificacao_mercadologica_id", 0),
+                        nome=d.get("descricao", ""),
+                        total_ofertas=d.get("total_ofertas", 0),
+                    )
+                )
+        self._dept_cache = depts
+        self._dept_cache_ts = now
+        return depts
+
+    async def get_products_by_department(
+        self, dept_id: int, limit: int = 500, only_offers: bool = False
+    ) -> tuple[list[Produto], dict]:
+        url = self._build_url(
+            f"/classificacoes_mercadologicas/departamentos/{dept_id}/produtos"
+        )
+        resp = await self._request(url, params={"page": 1, "limit": min(limit, 500)})
+        data = resp.json()
+        produtos = [Produto.from_api(p) for p in data.get("data", [])]
+        if only_offers:
+            produtos = [p for p in produtos if p.em_oferta]
+        return produtos, data.get("paginator", {})
+
+    async def get_product_by_id(self, produto_id: int) -> Optional[Produto]:
+        # Try text search with ID first (1 request, fast)
+        try:
+            produtos, _ = await self.search_products(str(produto_id), page=1)
+            for p in produtos:
+                if p.produto_id == produto_id:
+                    return p
+        except Exception:
+            pass
+
+        # Fallback: scan all departments (14 requests, slow but thorough)
+        depts = await self.get_departments()
+        tasks = [self.get_products_by_department(d.id, limit=99999) for d in depts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for result in results:
+            if isinstance(result, Exception):
+                continue
+            produtos, _ = result
+            for p in produtos:
+                if p.produto_id == produto_id:
+                    return p
+        return None
+
+    async def get_best_offers(self, limit: int = 50) -> list[Produto]:
+        depts = await self.get_departments()
+        tasks = [self.get_products_by_department(d.id, limit=99999) for d in depts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        all_offers: list[Produto] = []
+        for result in results:
+            if isinstance(result, Exception):
+                continue
+            produtos, _ = result
+            all_offers.extend(p for p in produtos if p.em_oferta)
+
+        all_offers.sort(
+            key=lambda p: p.oferta.desconto_pct if p.oferta else 0, reverse=True
+        )
+        return all_offers[:limit]
+
+    def clear_cache(self) -> None:
+        self._dept_cache = None
+        self._dept_cache_ts = 0.0
+        self._search_cache.clear()
+
+    async def close(self) -> None:
+        await self._client.aclose()
+
+
+vip_client = VipCommerceClient()

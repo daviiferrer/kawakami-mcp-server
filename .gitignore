@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+*.egg
+
+# Environment
+.env
+!.env.example
+
+# Tokens / Credentials
+.kawakami_token.json
+cloudflared-cred.json
+cloudflared-config.yml
+*.pem
+*.key
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log

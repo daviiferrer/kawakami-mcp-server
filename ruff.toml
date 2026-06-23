@@ -1,0 +1,9 @@
+[lint]
+target-version = "py313"
+line-length = 100
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[lint.isort]
+known-first-party = ["src"]
