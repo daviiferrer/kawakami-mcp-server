@@ -21,6 +21,7 @@ cloudflared-config.yml
 *.db
 *.db-journal
 *.db-wal
+*.db-shm
 
 # Docker
 docker-compose.override.yml

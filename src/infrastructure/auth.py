@@ -1,10 +1,26 @@
 import json
-import os
-import httpx
-from src.config import settings
-from src.domain.exceptions import TokenExpiredError
+import logging
+from pathlib import Path
 
-TOKEN_FILE = os.path.join(os.path.dirname(__file__), "..", "..", ".kawakami_token.json")
+import httpx
+
+from src.config import settings
+
+logger = logging.getLogger(__name__)
+
+TOKEN_FILE = (
+    Path(settings.token_file_path)
+    if settings.token_file_path
+    else Path(__file__).resolve().parents[2] / ".kawakami_token.json"
+)
+
+FALLBACK_CREDENTIALS: list[dict[str, str]] = []
+_raw = settings.vip_fallback_creds.strip() if hasattr(settings, "vip_fallback_creds") else ""
+if _raw:
+    for pair in _raw.split(";"):
+        parts = pair.split(":", 1)
+        if len(parts) == 2:
+            FALLBACK_CREDENTIALS.append({"username": parts[0].strip(), "key": parts[1].strip()})
 
 
 class TokenManager:
@@ -13,33 +29,35 @@ class TokenManager:
         self._sessao_id: str = ""
 
     def load(self) -> None:
-        if os.path.exists(TOKEN_FILE):
+        if TOKEN_FILE.exists():
             try:
-                with open(TOKEN_FILE) as f:
+                with TOKEN_FILE.open(encoding="utf-8") as f:
                     data = json.load(f)
                 self._token = data.get("token", "")
                 self._sessao_id = data.get("sessao_id", "")
-            except Exception:
-                pass
+            except (OSError, json.JSONDecodeError) as error:
+                logger.warning("Token file could not be loaded: %s", type(error).__name__)
         if not self._token:
             self._token = settings.vip_token
             self._sessao_id = settings.vip_sessao_id
 
     def save(self) -> None:
         try:
-            with open(TOKEN_FILE, "w") as f:
+            TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with TOKEN_FILE.open("w", encoding="utf-8") as f:
                 json.dump({"token": self._token, "sessao_id": self._sessao_id}, f)
-        except Exception:
-            pass
+            TOKEN_FILE.chmod(0o600)
+        except OSError as error:
+            logger.warning("Token file could not be saved: %s", type(error).__name__)
 
     async def refresh(self) -> bool:
+        if not FALLBACK_CREDENTIALS:
+            logger.error("Token refresh disabled: KWK_VIP_FALLBACK_CREDS is empty")
+            return False
+
         timeout = httpx.Timeout(settings.vip_timeout_connect, read=settings.vip_timeout_read)
         async with httpx.AsyncClient(timeout=timeout) as c:
-            for body in [
-                {"username": "guest", "key": "kawakami"},
-                {"username": "kawakami.com.br", "key": "vipcommerce"},
-                {"username": "100", "key": "kawakami"},
-            ]:
+            for i, body in enumerate(FALLBACK_CREDENTIALS):
                 try:
                     r = await c.post(
                         f"{settings.vip_base_url}/auth/loja/login",
@@ -62,13 +80,20 @@ class TokenManager:
                                 self._token = token
                                 self._sessao_id = sessao or ""
                                 self.save()
+                                logger.info("Token refreshed via credential %d", i + 1)
                                 return True
-                except Exception:
+                except (httpx.HTTPError, ValueError) as error:
+                    logger.debug(
+                        "Credential %d failed: %s",
+                        i + 1,
+                        type(error).__name__,
+                    )
                     continue
+        logger.error("All %d fallback credentials failed", len(FALLBACK_CREDENTIALS))
         return False
 
     @property
-    def headers(self) -> dict:
+    def headers(self) -> dict[str, str]:
         if not self._token:
             self.load()
         return {

@@ -1,28 +1,31 @@
 #!/bin/bash
-# Deploy do MCP Kawakami em VPS (Ubuntu/Debian)
+set -euo pipefail
 
-# Instalar uv se nao tiver
-if ! command -v uv &> /dev/null; then
+if ! command -v uv >/dev/null 2>&1; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    source $HOME/.local/bin/env
+    export PATH="$HOME/.local/bin:$PATH"
 fi
 
+install -m 0755 "$(command -v uv)" /usr/local/bin/uv
 cd /opt/kawakami-mcp-server
+/usr/local/bin/uv sync --frozen --no-dev
 
-# Instalar dependencias
-uv sync
-
-# Criar servico systemd
-cat > /etc/systemd/system/kawakami-mcp.service << 'EOF'
+cat > /etc/systemd/system/kawakami-mcp.service <<'EOF'
 [Unit]
 Description=Kawakami MCP Server
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=www-data
+Group=www-data
 WorkingDirectory=/opt/kawakami-mcp-server
-ExecStart=/root/.local/bin/uv run server.py --transport=streamable-http --host=0.0.0.0 --port=8000
+EnvironmentFile=/opt/kawakami-mcp-server/.env
+Environment=KWK_SESSION_DB_PATH=/var/lib/kawakami-mcp/kawakami_sessions.db
+Environment=KWK_TOKEN_FILE_PATH=/var/lib/kawakami-mcp/.kawakami_token.json
+StateDirectory=kawakami-mcp
+ExecStart=/usr/local/bin/uv run python -m src.main --transport=streamable-http --host=0.0.0.0 --port=8000
 Restart=always
 RestartSec=5
 
@@ -31,7 +34,6 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable kawakami-mcp
-systemctl start kawakami-mcp
+systemctl enable --now kawakami-mcp
 
 echo "MCP Kawakami rodando em http://$(hostname -I | awk '{print $1}'):8000/mcp"

@@ -34,6 +34,7 @@ class Produto:
     quantidade_vendida: int = 0
     link: str = ""
     secao_id: int = 0
+    dept_name: str = ""
     em_oferta: bool = False
     oferta: Optional[Oferta] = None
 

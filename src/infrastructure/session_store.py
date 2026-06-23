@@ -1,18 +1,24 @@
-import os
 import sqlite3
 import time
 import uuid
+from pathlib import Path
 from typing import Optional
 
 from src.config import settings
+from src.domain.exceptions import InvalidSessionError
 from src.domain.models import CarrinhoItem, ListaCompras
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "kawakami_sessions.db")
+DB_PATH = (
+    Path(settings.session_db_path)
+    if settings.session_db_path
+    else Path(__file__).resolve().parents[2] / "kawakami_sessions.db"
+)
 
 
 class SessionStore:
-    def __init__(self) -> None:
-        self._db_path = DB_PATH
+    def __init__(self, db_path: Path = DB_PATH) -> None:
+        self._db_path = db_path
+        self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
     def _get_conn(self) -> sqlite3.Connection:
@@ -55,12 +61,26 @@ class SessionStore:
                 );
             """)
 
-    def _ensure_session(self, sid: str) -> None:
+    def create_session(self) -> str:
+        session_id = uuid.uuid4().hex
         with self._get_conn() as conn:
             conn.execute(
-                "INSERT OR IGNORE INTO sessions (id, created_at) VALUES (?, ?)",
-                (sid, time.time()),
+                "INSERT INTO sessions (id, created_at) VALUES (?, ?)",
+                (session_id, time.time()),
             )
+        return session_id
+
+    def session_exists(self, session_id: str) -> bool:
+        with self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM sessions WHERE id = ?",
+                (session_id,),
+            ).fetchone()
+        return row is not None
+
+    def require_session(self, session_id: str) -> None:
+        if not self.session_exists(session_id):
+            raise InvalidSessionError("Sessao invalida ou expirada.")
 
     def _cleanup_expired(self) -> None:
         ttl = settings.session_ttl_hours * 3600
@@ -68,11 +88,8 @@ class SessionStore:
         with self._get_conn() as conn:
             conn.execute("DELETE FROM sessions WHERE created_at < ?", (cutoff,))
 
-    def get_session_id(self, session_id: Optional[str] = None) -> str:
-        return session_id or str(uuid.uuid4())[:8]
-
     def add_to_cart(self, sid: str, item: CarrinhoItem) -> list[CarrinhoItem]:
-        self._ensure_session(sid)
+        self.require_session(sid)
         with self._get_conn() as conn:
             conn.execute(
                 "DELETE FROM cart_items WHERE session_id = ? AND produto_id = ?",
@@ -80,15 +97,26 @@ class SessionStore:
             )
             conn.execute(
                 """INSERT INTO cart_items
-                   (session_id, produto_id, nome, preco_unit, quantidade, subtotal, un, imagem, em_oferta, tag)
+                   (session_id, produto_id, nome, preco_unit, quantidade,
+                    subtotal, un, imagem, em_oferta, tag)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (sid, item.produto_id, item.nome, item.preco_unit, item.quantidade,
-                 item.subtotal, item.un, item.imagem, int(item.em_oferta), item.tag),
+                (
+                    sid,
+                    item.produto_id,
+                    item.nome,
+                    item.preco_unit,
+                    item.quantidade,
+                    item.subtotal,
+                    item.un,
+                    item.imagem,
+                    int(item.em_oferta),
+                    item.tag,
+                ),
             )
         return self.get_cart(sid)
 
     def get_cart(self, sid: str) -> list[CarrinhoItem]:
-        self._ensure_session(sid)
+        self.require_session(sid)
         with self._get_conn() as conn:
             rows = conn.execute(
                 "SELECT * FROM cart_items WHERE session_id = ? ORDER BY id", (sid,)
@@ -122,22 +150,30 @@ class SessionStore:
         return removed
 
     def clear_cart(self, sid: str) -> None:
-        self._ensure_session(sid)
+        self.require_session(sid)
         with self._get_conn() as conn:
             conn.execute("DELETE FROM cart_items WHERE session_id = ?", (sid,))
 
     def save_list(self, sid: str, nome: str, lista: ListaCompras) -> None:
-        self._ensure_session(sid)
+        self.require_session(sid)
         import json
-        itens_json = json.dumps([
-            {
-                "produto_id": i.produto_id, "nome": i.nome,
-                "preco_unit": i.preco_unit, "quantidade": i.quantidade,
-                "subtotal": i.subtotal, "un": i.un, "imagem": i.imagem,
-                "em_oferta": i.em_oferta, "tag": i.tag,
-            }
-            for i in lista.itens
-        ])
+
+        itens_json = json.dumps(
+            [
+                {
+                    "produto_id": i.produto_id,
+                    "nome": i.nome,
+                    "preco_unit": i.preco_unit,
+                    "quantidade": i.quantidade,
+                    "subtotal": i.subtotal,
+                    "un": i.un,
+                    "imagem": i.imagem,
+                    "em_oferta": i.em_oferta,
+                    "tag": i.tag,
+                }
+                for i in lista.itens
+            ]
+        )
         with self._get_conn() as conn:
             conn.execute(
                 """INSERT OR REPLACE INTO shopping_lists
@@ -148,7 +184,8 @@ class SessionStore:
 
     def get_list(self, sid: str, nome: str) -> Optional[ListaCompras]:
         import json
-        self._ensure_session(sid)
+
+        self.require_session(sid)
         with self._get_conn() as conn:
             row = conn.execute(
                 "SELECT * FROM shopping_lists WHERE session_id = ? AND nome = ?",
@@ -167,7 +204,7 @@ class SessionStore:
 
     def get_all_lists(self, sid: str) -> dict[str, ListaCompras]:
         self._cleanup_expired()
-        self._ensure_session(sid)
+        self.require_session(sid)
         with self._get_conn() as conn:
             rows = conn.execute(
                 "SELECT * FROM shopping_lists WHERE session_id = ?", (sid,)
@@ -180,6 +217,7 @@ class SessionStore:
         return result
 
     def delete_list(self, sid: str, nome: str) -> bool:
+        self.require_session(sid)
         with self._get_conn() as conn:
             cursor = conn.execute(
                 "DELETE FROM shopping_lists WHERE session_id = ? AND nome = ?",

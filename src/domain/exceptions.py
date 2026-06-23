@@ -12,3 +12,7 @@ class TokenExpiredError(KawakamiError):
 
 class ProdutoNotFoundError(KawakamiError):
     """Product not found by ID or search term."""
+
+
+class InvalidSessionError(KawakamiError, ValueError):
+    """Shopping session does not exist or has an invalid identifier."""

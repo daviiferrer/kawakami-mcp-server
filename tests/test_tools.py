@@ -1,7 +1,12 @@
-import pytest
 from unittest.mock import patch
 
-from src.domain.models import Produto, Oferta
+import pytest
+
+
+def result_text(result) -> str:
+    if isinstance(result, str):
+        return result
+    return result.content[0].text
 
 
 class TestSearchProducts:
@@ -11,9 +16,10 @@ class TestSearchProducts:
             from src.tools.busca import buscar_produtos
 
             result = await buscar_produtos("teste")
-            assert "Mac. Nissin Lamen" in result
-            assert "R$ 2,79" in result
-            assert "OFERTA" in result
+            text = result_text(result)
+            assert "Mac. Nissin Lamen" in text
+            assert "R$ 2,79" in text
+            assert "OFERTA" in text
 
     @pytest.mark.asyncio
     async def test_buscar_produtos_empty_term(self, mock_vip_client):
@@ -28,31 +34,36 @@ class TestSearchProducts:
             from src.tools.busca import buscar_por_ean
 
             result = await buscar_por_ean("7891079000250")
-            assert "Mac. Nissin" in result
+            assert "Mac. Nissin" in result_text(result)
 
 
 class TestCartTools:
     @pytest.mark.asyncio
-    async def test_adicionar_ao_carrinho(self, mock_vip_client, mock_context):
+    async def test_adicionar_ao_carrinho(self, mock_vip_client):
         with patch("src.tools.carrinho.vip_client", mock_vip_client):
+            from src.infrastructure.session_store import session_store
             from src.tools.carrinho import adicionar_ao_carrinho, ver_carrinho
 
-            result = await adicionar_ao_carrinho("lamen", mock_context)
-            assert "+ Mac. Nissin" in result
-            assert "Carrinho: 1 itens" in result
+            session_id = session_store.create_session()
+            result = await adicionar_ao_carrinho(session_id=session_id, termo="lamen")
+            text = result_text(result)
+            assert "+ Mac. Nissin" in text
+            assert "Carrinho: 1 itens" in text
 
-            cart = await ver_carrinho(mock_context)
-            assert "Mac. Nissin" in cart
+            cart = await ver_carrinho(session_id)
+            assert "Mac. Nissin" in result_text(cart)
 
     @pytest.mark.asyncio
-    async def test_limpar_carrinho(self, mock_vip_client, mock_context):
+    async def test_limpar_carrinho(self, mock_vip_client):
         with patch("src.tools.carrinho.vip_client", mock_vip_client):
+            from src.infrastructure.session_store import session_store
             from src.tools.carrinho import adicionar_ao_carrinho, limpar_carrinho, ver_carrinho
 
-            await adicionar_ao_carrinho("lamen", mock_context)
-            await limpar_carrinho(mock_context)
-            result = await ver_carrinho(mock_context)
-            assert "Carrinho vazio" in result
+            session_id = session_store.create_session()
+            await adicionar_ao_carrinho(session_id=session_id, termo="lamen")
+            await limpar_carrinho(session_id)
+            result = await ver_carrinho(session_id)
+            assert "Carrinho vazio" in result_text(result)
 
 
 class TestOfertas:
@@ -62,8 +73,9 @@ class TestOfertas:
             from src.tools.ofertas import ofertas_do_dia
 
             result = await ofertas_do_dia(limite=10)
-            assert "MELHORES OFERTAS" in result
-            assert "Mac. Nissin" in result
+            text = result_text(result)
+            assert "MELHORES OFERTAS" in text
+            assert "Mac. Nissin" in text
 
 
 class TestFormatters:
@@ -75,13 +87,19 @@ class TestFormatters:
         assert format_price(1899.50) == "R$ 1899,50"
 
     def test_format_product_card(self):
-        from src.presentation.formatters import format_product_card
         from src.domain.models import Produto
+        from src.presentation.formatters import format_product_card
 
         p = Produto(
-            produto_id=1, descricao="Teste", preco=10.0,
-            unidade_sigla="UN", imagem="img.jpg", disponivel=True,
-            quantidade_maxima=100, codigo_barras="123", link="teste",
+            produto_id=1,
+            descricao="Teste",
+            preco=10.0,
+            unidade_sigla="UN",
+            imagem="img.jpg",
+            disponivel=True,
+            quantidade_maxima=100,
+            codigo_barras="123",
+            link="teste",
         )
         result = format_product_card(p)
         assert "Teste" in result

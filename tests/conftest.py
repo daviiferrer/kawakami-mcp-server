@@ -1,10 +1,11 @@
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.fixture
 def mock_vip_client():
-    from src.domain.models import Produto, Oferta
+    from src.domain.models import Oferta, Produto
 
     produto = Produto(
         produto_id=285,
@@ -32,10 +33,3 @@ def mock_vip_client():
     mock.get_product_by_id.return_value = produto
     mock.get_best_offers.return_value = [produto]
     return mock
-
-
-@pytest.fixture
-def mock_context():
-    ctx = MagicMock()
-    ctx.session_id = "test-session-123"
-    return ctx
