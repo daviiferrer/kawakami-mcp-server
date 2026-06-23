@@ -13,7 +13,7 @@ export function ProductCarousel({ products, cartItems, loadingIds, onAdd }: Prop
   const inCartIds = new Set(cartItems.map((item) => item.id))
 
   return (
-    <div className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:justify-center md:overflow-x-visible md:snap-none md:gap-3">
+    <div className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-x-visible md:snap-none md:gap-3">
       {products.map((product) => (
         <ProductCard
           key={product.id}

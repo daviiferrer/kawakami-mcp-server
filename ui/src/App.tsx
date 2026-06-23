@@ -154,7 +154,7 @@ export function App() {
           </section>
         ))
       )}
-      <div className="h-20" />
+      <div className="h-4" />
       <PipButton count={unitCount} onClick={() => setDrawerOpen(true)} />
       <CartDrawer
         items={cart}
