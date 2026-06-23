@@ -10,7 +10,7 @@ implantável com healthcheck real e capaz de entregar a UI React pelo padrão MC
 - O backend continua em Python com `mcp==1.28.0`.
 - Carrinhos e listas usam um `session_id` explícito, opaco e persistido no SQLite.
 - Tools de catálogo retornam texto compatível com clientes MCP e dados estruturados para a UI.
-- A UI é registrada como resource `ui://kawakami/catalog-v1.html` e usa JSON-RPC 2.0
+- A UI é registrada como resource `ui://kawakami/catalog-v2.html` e usa JSON-RPC 2.0
   sobre `postMessage`.
 - O servidor expõe `/health` sem consultar a API externa, para que a saúde do processo não
   dependa do fornecedor.

@@ -78,7 +78,7 @@ usuários ou conversas.
 
 As tools de produtos e ofertas retornam texto e `structuredContent`. Clientes
 compatíveis com MCP Apps carregam o resource
-`ui://kawakami/catalog-v1.html`.
+`ui://kawakami/catalog-v2.html`.
 
 Para desenvolver a interface:
 

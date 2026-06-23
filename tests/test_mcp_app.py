@@ -62,7 +62,11 @@ async def test_offers_returns_widget_structured_content(mock_vip_client, offer_p
 
 @pytest.mark.asyncio
 async def test_server_registers_widget_resource_and_tool_metadata():
-    from src.presentation.widget import WIDGET_MIME_TYPE, WIDGET_URI
+    from src.presentation.widget import (
+        WIDGET_MIME_TYPE,
+        WIDGET_RESOURCE_META,
+        WIDGET_URI,
+    )
     from src.server import create_mcp
 
     mcp = create_mcp()
@@ -72,6 +76,8 @@ async def test_server_registers_widget_resource_and_tool_metadata():
     offers_tool = next(tool for tool in tools if tool.name == "ofertas_do_dia")
     widget_resource = next(resource for resource in resources if str(resource.uri) == WIDGET_URI)
 
+    assert WIDGET_URI == "ui://kawakami/catalog-v2.html"
+    assert WIDGET_RESOURCE_META["ui"]["prefersBorder"] is False
     assert offers_tool.meta["ui"]["resourceUri"] == WIDGET_URI
     assert widget_resource.mimeType == WIDGET_MIME_TYPE
 
