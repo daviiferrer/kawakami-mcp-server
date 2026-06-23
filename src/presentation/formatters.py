@@ -1,5 +1,5 @@
 from src.config import settings
-from src.domain.models import Produto, CarrinhoItem, ListaCompras
+from src.domain.models import CarrinhoItem, ListaCompras, Produto
 
 
 def format_price(value: float) -> str:
@@ -59,7 +59,9 @@ def format_department_list(depts: list, cep: str) -> str:
     return "\n".join(lines)
 
 
-def format_department_products(dept_name: str, produtos: list[Produto], paginator: dict, apenas_ofertas: bool) -> str:
+def format_department_products(
+    dept_name: str, produtos: list[Produto], paginator: dict, apenas_ofertas: bool
+) -> str:
     total = paginator.get("total_items", len(produtos))
     lines = [f"=== {dept_name.upper()} ==="]
     lines.append(f"Total: {total} produtos")
@@ -106,7 +108,8 @@ def format_product_detail(p: Produto, dept_name: str) -> str:
         lines.append(f"Nome: {p.oferta.nome}")
         lines.append(f"Preco oferta: {format_price(p.oferta.preco_oferta)}")
         if p.oferta.preco_antigo > 0:
-            lines.append(f"Preco anterior: {format_price(p.oferta.preco_antigo)} ({p.oferta.desconto_pct:.0f}% OFF)")
+            old_price = format_price(p.oferta.preco_antigo)
+            lines.append(f"Preco anterior: {old_price} ({p.oferta.desconto_pct:.0f}% OFF)")
         lines.append(f"Qtd minima: {p.oferta.quantidade_minima}")
         lines.append(f"Qtd maxima: {p.oferta.quantidade_maxima}")
         lines.append(f"Limite por cliente: {p.oferta.quantidade_maxima} unidades")
@@ -123,9 +126,9 @@ def format_offers_ranking(ofertas: list[Produto], cep: str) -> str:
         lines.append(f"{i}. {o.descricao} [{o.nome if hasattr(o, 'nome') else ''}]")
         oferta = o.oferta
         if oferta:
-            lines.append(
-                f"   {format_price(oferta.preco_oferta)} (era {format_price(oferta.preco_antigo)}, {oferta.desconto_pct:.0f}% OFF)"
-            )
+            offer_price = format_price(oferta.preco_oferta)
+            old_price = format_price(oferta.preco_antigo)
+            lines.append(f"   {offer_price} (era {old_price}, {oferta.desconto_pct:.0f}% OFF)")
             lines.append(
                 f"   Tag: {oferta.tag} | Estoque: {o.quantidade_maxima} | ID: {o.produto_id}"
             )

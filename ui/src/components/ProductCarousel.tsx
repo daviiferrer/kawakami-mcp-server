@@ -1,13 +1,28 @@
-import type { Product } from "../data"
+import type { CartItem } from "./CartDrawer"
 import { ProductCard } from "./ProductCard"
+import type { Product } from "../data"
 
-interface Props { products: Product[]; cartItems: { id: number }[]; onAdd: (id: number) => void }
+interface Props {
+  products: Product[]
+  cartItems: CartItem[]
+  loadingIds: Set<number>
+  onAdd: (product: Product) => void
+}
 
-export function ProductCarousel({ products, cartItems, onAdd }: Props) {
-  const inCartIds = new Set(cartItems.map(c => c.id))
+export function ProductCarousel({ products, cartItems, loadingIds, onAdd }: Props) {
+  const inCartIds = new Set(cartItems.map((item) => item.id))
+
   return (
-    <div className="flex gap-2.5 overflow-x-auto pb-6 px-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-x-visible md:snap-none md:justify-center md:gap-3">
-      {products.map(p => <ProductCard key={p.id} product={p} isInCart={inCartIds.has(p.id)} onAdd={onAdd} />)}
+    <div className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:justify-center md:overflow-x-visible md:snap-none md:gap-3">
+      {products.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          isInCart={inCartIds.has(product.id)}
+          isLoading={loadingIds.has(product.id)}
+          onAdd={onAdd}
+        />
+      ))}
     </div>
   )
 }

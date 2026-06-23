@@ -1,23 +1,19 @@
 import asyncio
 import time
-from typing import Optional
-
-from mcp.server.fastmcp import Context
 
 from src.config import settings
-from src.infrastructure.vipcommerce_client import vip_client
-from src.infrastructure.session_store import session_store
-from src.infrastructure.sessions import get_sid
-from src.infrastructure.validation import sanitize_term, validate_nome_lista
-from src.infrastructure.error_handler import safe_tool
 from src.domain.models import CarrinhoItem, ListaCompras
+from src.infrastructure.error_handler import safe_tool
+from src.infrastructure.session_store import session_store
+from src.infrastructure.validation import sanitize_term, validate_nome_lista
+from src.infrastructure.vipcommerce_client import vip_client
 from src.presentation.formatters import format_price, format_saved_list, format_saved_lists_summary
 
 _sem = asyncio.Semaphore(5)
 
 
-async def _resolve_item(item: str):
-    produtos, _ = await vip_client.search_products(item, page=1, cep=settings.default_cep)
+async def _resolve_item(item: str, cep: str):
+    produtos, _ = await vip_client.search_products(item, page=1, cep=cep)
     if not produtos:
         return None
     best = next((p for p in produtos if p.disponivel), produtos[0])
@@ -34,20 +30,25 @@ async def _resolve_item(item: str):
     )
 
 
-async def _resolve_safe(item: str):
+async def _resolve_safe(item: str, cep: str):
     async with _sem:
-        return await _resolve_item(item)
+        return await _resolve_item(item, cep)
 
 
 @safe_tool
-async def salvar_lista(nome: str, itens: str, cep: str = settings.default_cep, ctx: Optional[Context] = None) -> str:
+async def salvar_lista(
+    session_id: str,
+    nome: str,
+    itens: str,
+    cep: str = settings.default_cep,
+) -> str:
     nome = validate_nome_lista(nome)
     items_raw = [sanitize_term(i) for i in itens.split(",") if i.strip()]
     items_list = [i for i in items_raw if i]
     if not items_list:
         return "Forneca pelo menos um item para a lista."
-    sid = get_sid(ctx)
-    tasks = [_resolve_safe(item) for item in items_list]
+    session_store.require_session(session_id)
+    tasks = [_resolve_safe(item, cep) for item in items_list]
     results = await asyncio.gather(*tasks)
     saved_items = [r for r in results if r is not None]
     total = sum(item.subtotal for item in saved_items)
@@ -58,31 +59,30 @@ async def salvar_lista(nome: str, itens: str, cep: str = settings.default_cep, c
         criado_em=time.strftime("%d/%m/%Y %H:%M"),
         cep=cep,
     )
-    session_store.save_list(sid, nome, lista)
-    return f"Lista '{nome}' salva com {len(saved_items)} itens. Total estimado: {format_price(total)}"
+    session_store.save_list(session_id, nome, lista)
+    return (
+        f"Lista '{nome}' salva com {len(saved_items)} itens. Total estimado: {format_price(total)}"
+    )
 
 
 @safe_tool
-async def minhas_listas(ctx: Optional[Context] = None) -> str:
-    sid = get_sid(ctx)
-    listas = session_store.get_all_lists(sid)
-    return format_saved_lists_summary(listas, sid)
+async def minhas_listas(session_id: str) -> str:
+    listas = session_store.get_all_lists(session_id)
+    return format_saved_lists_summary(listas, session_id)
 
 
 @safe_tool
-async def ver_lista(nome: str, ctx: Optional[Context] = None) -> str:
+async def ver_lista(session_id: str, nome: str) -> str:
     nome = validate_nome_lista(nome)
-    sid = get_sid(ctx)
-    lista = session_store.get_list(sid, nome)
+    lista = session_store.get_list(session_id, nome)
     if not lista:
         return f"Lista '{nome}' nao encontrada."
     return format_saved_list(lista)
 
 
 @safe_tool
-async def excluir_lista(nome: str, ctx: Optional[Context] = None) -> str:
+async def excluir_lista(session_id: str, nome: str) -> str:
     nome = validate_nome_lista(nome)
-    sid = get_sid(ctx)
-    if session_store.delete_list(sid, nome):
+    if session_store.delete_list(session_id, nome):
         return f"Lista '{nome}' excluida."
     return f"Lista '{nome}' nao encontrada."

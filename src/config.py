@@ -3,9 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix="KWK_", env_file=".env", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_prefix="KWK_", env_file=".env", extra="ignore")
 
     # VIP Commerce
     vip_base_url: str = "https://services.vipcommerce.com.br/api-admin/v1/org/100"
@@ -14,6 +12,7 @@ class Settings(BaseSettings):
     vip_token: str = ""
     vip_sessao_id: str = ""
     vip_fallback_creds: str = ""  # formato: "user1:key1;user2:key2" para refresh do token
+    token_file_path: str = ""
     vip_timeout_connect: float = 10.0
     vip_timeout_read: float = 30.0
 
@@ -32,9 +31,11 @@ class Settings(BaseSettings):
 
     # Image CDN
     img_base_url: str = "https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/250x250"
+    widget_domain: str = "https://kawakami.axischat.com.br"
 
     # Session
     session_ttl_hours: int = 24
+    session_db_path: str = ""
 
     @field_validator("port")
     @classmethod
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
     @classmethod
     def token_warn_if_empty(cls, v: str) -> str:
         import logging
+
         cleaned = v.strip()
         if not cleaned:
             logging.getLogger(__name__).warning(
@@ -58,6 +60,7 @@ class Settings(BaseSettings):
     @classmethod
     def cep_must_be_valid(cls, v: str) -> str:
         import re
+
         cleaned = re.sub(r"\D", "", v)
         if len(cleaned) != 8:
             raise ValueError(f"CEP must be 8 digits, got '{v}'")

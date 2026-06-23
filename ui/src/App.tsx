@@ -1,60 +1,170 @@
-import { useState, useCallback, useSyncExternalStore } from "react"
-import { applyDocumentTheme } from "@openai/apps-sdk-ui/theme"
-import { OFFERS, activePrice } from "./data"
-import { ProductCarousel } from "./components/ProductCarousel"
-import { CartDrawer } from "./components/CartDrawer"
-import type { CartItem } from "./components/CartDrawer"
-import { PipButton } from "./components/PipButton"
-import { Toast } from "./components/Toast"
-import { getSections, onSectionsChange, type UiSection } from "./bridge"
+import { useApp, useHostStyles } from "@modelcontextprotocol/ext-apps/react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-applyDocumentTheme("dark")
+import {
+  readCart,
+  readError,
+  readSections,
+  readSessionId,
+  type ToolResultLike,
+  type UiSection,
+} from "./bridge"
+import { CartDrawer, type CartItem } from "./components/CartDrawer"
+import { PipButton } from "./components/PipButton"
+import { ProductCarousel } from "./components/ProductCarousel"
+import { Toast } from "./components/Toast"
+import type { Product } from "./data"
 
 export function App() {
+  const [sections, setSections] = useState<UiSection[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [loadingIds, setLoadingIds] = useState<Set<number>>(new Set())
+  const isCreatingSession = useRef(false)
 
-  const bridgeSections = useSyncExternalStore(onSectionsChange, getSections)
-
-  const sections: UiSection[] = bridgeSections.length > 0
-    ? bridgeSections
-    : [{ key: "offers", title: "Ofertas do Dia", products: OFFERS }]
-
-  const allProducts = sections.flatMap(s => s.products)
-
-  const addToCart = useCallback((id: number) => {
-    const product = allProducts.find(p => p.id === id)
-    if (!product) return
-    setToast(product.name)
-    setCart(prev => {
-      const existing = prev.find(i => i.id === id)
-      if (existing) { const q = existing.quantity + 1; return prev.map(i => i.id === id ? { ...i, quantity: q, subtotal: q * i.unitPrice } : i) }
-      return [...prev, { id: product.id, name: product.name, unit: product.unit, unitPrice: activePrice(product), quantity: 1, subtotal: activePrice(product), image: product.image, isOffer: product.offerPrice !== null, originalPrice: product.originalPrice }]
-    })
-  }, [allProducts])
-
-  const handleQtyChange = useCallback((id: number, delta: number) => {
-    setCart(prev => { const item = prev.find(i => i.id === id); if (!item) return prev; const q = item.quantity + delta; if (q <= 0) return prev.filter(i => i.id !== id); return prev.map(i => i.id === id ? { ...i, quantity: q, subtotal: q * i.unitPrice } : i) })
+  const applyToolResult = useCallback((result: ToolResultLike) => {
+    const error = readError(result)
+    if (error) {
+      setErrorMessage(error)
+      return
+    }
+    const nextSections = readSections(result)
+    const nextCart = readCart(result)
+    const nextSessionId = readSessionId(result)
+    if (nextSections) setSections(nextSections)
+    if (nextCart) setCart(nextCart)
+    if (nextSessionId) setSessionId(nextSessionId)
   }, [])
 
-  const handleRemove = useCallback((id: number) => { setCart(prev => prev.filter(i => i.id !== id)) }, [])
-  const handleCheckout = useCallback(() => { console.log("Checkout:", cart) }, [cart])
-  const unitCount = cart.reduce((s, i) => s + i.quantity, 0)
+  const { app, isConnected, error } = useApp({
+    appInfo: { name: "Kawakami Catalog", version: "1.0.0" },
+    capabilities: {},
+    onAppCreated: (createdApp) => {
+      createdApp.ontoolresult = applyToolResult
+    },
+  })
+  useHostStyles(app, app?.getHostContext())
+
+  useEffect(() => {
+    if (!app || !isConnected || sessionId || isCreatingSession.current) return
+    isCreatingSession.current = true
+    void app
+      .callServerTool({ name: "criar_sessao", arguments: {} })
+      .then(applyToolResult)
+      .catch((sessionError: unknown) => {
+        setErrorMessage(
+          sessionError instanceof Error ? sessionError.message : "Falha ao criar sessão.",
+        )
+      })
+      .finally(() => {
+        isCreatingSession.current = false
+      })
+  }, [app, applyToolResult, isConnected, sessionId])
+
+  const runProductMutation = useCallback(
+    async (productId: number, name: string, quantity: number): Promise<void> => {
+      if (!app || !sessionId) return
+      setLoadingIds((current) => new Set(current).add(productId))
+      setErrorMessage(null)
+      try {
+        const result =
+          quantity <= 0
+            ? await app.callServerTool({
+                name: "remover_do_carrinho",
+                arguments: { session_id: sessionId, termo: name },
+              })
+            : await app.callServerTool({
+                name: "adicionar_ao_carrinho",
+                arguments: {
+                  session_id: sessionId,
+                  termo: name,
+                  quantidade: quantity,
+                },
+              })
+        applyToolResult(result)
+      } catch (mutationError) {
+        setErrorMessage(
+          mutationError instanceof Error ? mutationError.message : "Falha ao atualizar carrinho.",
+        )
+      } finally {
+        setLoadingIds((current) => {
+          const next = new Set(current)
+          next.delete(productId)
+          return next
+        })
+      }
+    },
+    [app, applyToolResult, sessionId],
+  )
+
+  const addToCart = useCallback(
+    (product: Product) => {
+      const existing = cart.find((item) => item.id === product.id)
+      setToast(product.name)
+      void runProductMutation(product.id, product.name, (existing?.quantity ?? 0) + 1)
+    },
+    [cart, runProductMutation],
+  )
+
+  const changeQuantity = useCallback(
+    (item: CartItem, delta: number) => {
+      void runProductMutation(item.id, item.name, item.quantity + delta)
+    },
+    [runProductMutation],
+  )
+
+  const removeItem = useCallback(
+    (item: CartItem) => {
+      void runProductMutation(item.id, item.name, 0)
+    },
+    [runProductMutation],
+  )
+
+  const unitCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  const connectionError = error?.message ?? errorMessage
+
+  if (!isConnected && !connectionError) {
+    return <p className="p-6 text-center text-sm text-zinc-500">Conectando ao Kawakami...</p>
+  }
 
   return (
-    <div className="bg-main text-default min-h-dvh">
-      {sections.map(s => (
-        <section key={s.key}>
-          <p className="text-xs font-semibold text-secondary uppercase tracking-wider px-4 pt-4 pb-2.5">{s.title}</p>
-          <ProductCarousel products={s.products} cartItems={cart} onAdd={addToCart} />
-        </section>
-      ))}
-      {sections.length === 0 && <p className="text-center text-tertiary text-sm py-20">Nenhum produto para exibir.</p>}
+    <main className="min-h-dvh bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100">
+      {connectionError && (
+        <p className="mx-4 mt-4 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+          {connectionError}
+        </p>
+      )}
+      {sections.length === 0 ? (
+        <p className="py-20 text-center text-sm text-zinc-500">Nenhum produto para exibir.</p>
+      ) : (
+        sections.map((section) => (
+          <section key={section.key}>
+            <h2 className="px-4 pb-2.5 pt-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              {section.title}
+            </h2>
+            <ProductCarousel
+              products={section.products}
+              cartItems={cart}
+              loadingIds={loadingIds}
+              onAdd={addToCart}
+            />
+          </section>
+        ))
+      )}
       <div className="h-20" />
       <PipButton count={unitCount} onClick={() => setDrawerOpen(true)} />
-      <CartDrawer items={cart} open={drawerOpen} onClose={() => setDrawerOpen(false)} onQuantityChange={handleQtyChange} onRemove={handleRemove} onCheckout={handleCheckout} />
+      <CartDrawer
+        items={cart}
+        open={drawerOpen}
+        loadingIds={loadingIds}
+        onClose={() => setDrawerOpen(false)}
+        onQuantityChange={changeQuantity}
+        onRemove={removeItem}
+      />
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
-    </div>
+    </main>
   )
 }

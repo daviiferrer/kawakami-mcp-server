@@ -49,10 +49,11 @@ cp .env.example .env   # Preencha KWK_VIP_TOKEN e KWK_VIP_SESSAO_ID
 make up                # Build + sobe API + tunnel
 ```
 
-## Tools (15)
+## Tools (16)
 
 | Tool | Descrição |
 |---|---|
+| `criar_sessao` | Cria um identificador isolado para carrinho e listas |
 | `buscar_produtos` | Busca produtos por nome |
 | `buscar_por_ean` | Busca por código de barras |
 | `listar_departamentos` | Lista departamentos com contagem |
@@ -69,6 +70,28 @@ make up                # Build + sobe API + tunnel
 | `ver_lista` | Detalha uma lista |
 | `excluir_lista` | Remove uma lista |
 
+As tools de carrinho e listas exigem o `session_id` retornado por
+`criar_sessao`. O identificador é uma capacidade privada: não compartilhe entre
+usuários ou conversas.
+
+## MCP Apps UI
+
+As tools de produtos e ofertas retornam texto e `structuredContent`. Clientes
+compatíveis com MCP Apps carregam o resource
+`ui://kawakami/catalog-v1.html`.
+
+Para desenvolver a interface:
+
+```bash
+cd ui
+npm ci
+npm run lint
+npm run build
+```
+
+O build Vite é embutido no resource MCP. A imagem Docker compila a UI
+automaticamente.
+
 ## Variáveis de ambiente
 
 Ver `.env.example` para todas as opções. Essenciais:
@@ -78,6 +101,15 @@ Ver `.env.example` para todas as opções. Essenciais:
 | `KWK_VIP_TOKEN` | Token JWT da sessão anônima VIP Commerce |
 | `KWK_VIP_SESSAO_ID` | Session ID do VIP Commerce |
 | `KWK_DEFAULT_CEP` | CEP padrão (default: 19700000) |
+| `KWK_SESSION_DB_PATH` | Caminho persistente do SQLite |
+| `KWK_TOKEN_FILE_PATH` | Caminho persistente do token renovado |
+| `KWK_WIDGET_DOMAIN` | Origem HTTPS dedicada do widget |
+
+## Healthcheck
+
+`GET /health` retorna `{"status":"ok"}` quando o processo está pronto. O
+endpoint não consulta a VIP Commerce, evitando reinícios durante indisponibilidade
+do fornecedor.
 
 ## Desenvolvimento
 

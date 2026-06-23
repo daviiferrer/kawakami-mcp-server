@@ -1,18 +1,11 @@
-import uuid
-from typing import Optional
+from mcp.types import CallToolResult
 
-from mcp.server.fastmcp import Context
+from src.infrastructure.error_handler import safe_tool
+from src.infrastructure.session_store import session_store
+from src.presentation.structured import session_result
 
-_sid_fallback: str | None = None
 
-
-def get_sid(ctx: Optional[Context] = None) -> str:
-    """Retorna session ID do MCP se disponivel, ou fallback unico."""
-    global _sid_fallback
-    if ctx is not None:
-        sid = getattr(ctx, "session_id", None) or getattr(getattr(ctx, "session", None), "id", None)
-        if sid:
-            return str(sid)
-    if _sid_fallback is None:
-        _sid_fallback = uuid.uuid4().hex[:12]
-    return _sid_fallback
+@safe_tool
+async def criar_sessao() -> CallToolResult:
+    """Cria uma sessao isolada para carrinho e listas."""
+    return session_result(session_store.create_session())

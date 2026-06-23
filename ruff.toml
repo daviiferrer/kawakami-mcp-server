@@ -1,6 +1,8 @@
-[lint]
 target-version = "py313"
 line-length = 100
+
+[lint]
+select = ["E", "F", "I", "W"]
 
 [lint.per-file-ignores]
 "__init__.py" = ["F401"]

@@ -7,7 +7,9 @@ MAX_QUANTIDADE = 999
 
 
 def sanitize_term(termo: str) -> str:
-    cleaned = re.sub(r"[^\w\s\-.,áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]", "", termo, flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r"[^\w\s\-.,áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]", "", termo, flags=re.IGNORECASE
+    )
     return cleaned.strip()[:MAX_TERM_LENGTH]
 
 

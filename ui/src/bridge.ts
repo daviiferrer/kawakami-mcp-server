@@ -1,46 +1,43 @@
-import { type Product } from "./data"
+import type { Product } from "./data"
+import type { CartItem } from "./components/CartDrawer"
 
-export interface UiSection { key: string; title: string; products: Product[] }
-
-type Listener = () => void
-let _sections: UiSection[] = []
-const listeners = new Set<Listener>()
-
-export function onSectionsChange(fn: Listener): () => void {
-  listeners.add(fn)
-  return () => listeners.delete(fn)
+export interface UiSection {
+  key: string
+  title: string
+  products: Product[]
 }
 
-export function getSections(): UiSection[] {
-  return _sections
+export interface ToolResultLike {
+  structuredContent?: unknown
+  content?: unknown
+  isError?: boolean
 }
 
-function notify() {
-  for (const fn of listeners) fn()
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
 }
 
-function handleMessage(e: MessageEvent) {
-  const msg = e.data
-  if (!msg || typeof msg !== "object") return
-
-  switch (msg.type) {
-    case "ui/render":
-      if (msg.section && Array.isArray(msg.products)) {
-        _sections = [{ key: msg.section, title: msg.title || msg.section, products: msg.products as Product[] }]
-        notify()
-      }
-      break
-    case "ui/render_multi":
-      if (Array.isArray(msg.sections)) {
-        _sections = msg.sections as UiSection[]
-        notify()
-      }
-      break
-    case "ui/clear":
-      _sections = []
-      notify()
-      break
-  }
+export function readSections(result: ToolResultLike): UiSection[] | null {
+  if (!isRecord(result.structuredContent)) return null
+  const sections = result.structuredContent.sections
+  return Array.isArray(sections) ? (sections as UiSection[]) : null
 }
 
-window.addEventListener("message", handleMessage)
+export function readCart(result: ToolResultLike): CartItem[] | null {
+  if (!isRecord(result.structuredContent)) return null
+  const cart = result.structuredContent.cart
+  return Array.isArray(cart) ? (cart as CartItem[]) : null
+}
+
+export function readSessionId(result: ToolResultLike): string | null {
+  if (!isRecord(result.structuredContent)) return null
+  const sessionId = result.structuredContent.sessionId
+  return typeof sessionId === "string" ? sessionId : null
+}
+
+export function readError(result: ToolResultLike): string | null {
+  if (!result.isError || !Array.isArray(result.content)) return null
+  const first = result.content[0]
+  if (!isRecord(first)) return "Falha ao executar a operacao."
+  return typeof first.text === "string" ? first.text : "Falha ao executar a operacao."
+}

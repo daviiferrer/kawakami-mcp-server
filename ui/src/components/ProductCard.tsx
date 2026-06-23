@@ -1,39 +1,65 @@
-import { Badge } from "@openai/apps-sdk-ui/components/Badge"
-import { Button } from "@openai/apps-sdk-ui/components/Button"
-import { Plus, Check } from "lucide-react"
-import type { Product } from "../data"
-import { IMG_BASE, fmt, activePrice } from "../data"
+import { Check, Plus } from "lucide-react"
 
-interface Props { product: Product; isInCart: boolean; onAdd: (id: number) => void }
+import { IMG_BASE, activePrice, fmt, type Product } from "../data"
 
-const TAG_COLOR = { exclusive: "secondary", club: "warning", weekly: "success" } as const
+interface Props {
+  product: Product
+  isInCart: boolean
+  isLoading: boolean
+  onAdd: (product: Product) => void
+}
 
-export function ProductCard({ product, isInCart, onAdd }: Props) {
+const TAG_CLASSES = {
+  exclusive: "bg-violet-600",
+  club: "bg-amber-500 text-zinc-950",
+  weekly: "bg-emerald-600",
+} as const
+
+export function ProductCard({ product, isInCart, isLoading, onAdd }: Props) {
   const price = activePrice(product)
+  const tagClass = product.tag ? TAG_CLASSES[product.tag] : ""
+
   return (
-    <div className="min-w-[210px] max-w-[210px] flex-shrink-0 snap-start bg-surface border border-default rounded-xl overflow-hidden flex flex-col">
-      <div className="relative bg-surface-secondary flex justify-center items-center h-[140px] border-b border-default flex-shrink-0">
-        <img src={`${IMG_BASE}/${product.image}`} alt={product.name} loading="lazy" className="max-h-[100px] max-w-[90%] object-contain" />
+    <article className="min-w-[210px] max-w-[210px] flex-shrink-0 snap-start overflow-hidden rounded-xl border border-zinc-200 bg-white text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+      <div className="relative flex h-[140px] items-center justify-center border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
+        <img
+          src={`${IMG_BASE}/${product.image}`}
+          alt={product.name}
+          loading="lazy"
+          className="max-h-[100px] max-w-[90%] object-contain"
+        />
         {product.tagLabel && (
-          <Badge color={TAG_COLOR[product.tag!]} variant="solid" size="sm" className="absolute top-2 left-2">
+          <span
+            className={`absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-bold text-white ${tagClass}`}
+          >
             {product.tagLabel}
-          </Badge>
+          </span>
         )}
       </div>
-      <div className="px-3 pt-2.5 pb-3 flex flex-col flex-1">
-        <p className="text-sm font-medium line-clamp-2 mb-1" style={{ minHeight: "38px" }}>{product.name}</p>
-        <p className="text-2xs text-tertiary mb-2.5">{product.stock} em estoque</p>
-        <div className="mt-auto flex justify-between items-end gap-1">
+      <div className="flex min-h-[150px] flex-col px-3 pb-3 pt-2.5">
+        <p className="mb-1 line-clamp-2 min-h-[38px] text-sm font-medium">{product.name}</p>
+        <p className="mb-2.5 text-xs text-zinc-500">{product.stock} em estoque</p>
+        <div className="mt-auto flex items-end justify-between gap-2">
           <div className="whitespace-nowrap">
-            {product.originalPrice && product.offerPrice && <p className="text-2xs text-tertiary line-through leading-none mb-0.5">{fmt(product.originalPrice)}</p>}
-            <p className="heading-sm leading-none">{fmt(price)}</p>
-            <p className="text-2xs text-tertiary">/{product.unit}</p>
+            {product.originalPrice && product.offerPrice && (
+              <p className="text-xs leading-none text-zinc-500 line-through">
+                {fmt(product.originalPrice)}
+              </p>
+            )}
+            <p className="text-lg font-bold leading-tight">{fmt(price)}</p>
+            <p className="text-xs text-zinc-500">/{product.unit}</p>
           </div>
-          <Button color={isInCart ? "success" : "secondary"} variant={isInCart ? "solid" : "outline"} size="sm" onClick={() => onAdd(product.id)} className="flex-shrink-0 whitespace-nowrap">
-            {isInCart ? <Check className="size-3.5" /> : <Plus className="size-3.5" />} Adicionar
-          </Button>
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => onAdd(product)}
+            className="inline-flex items-center gap-1 rounded-lg border border-emerald-600 px-2.5 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-950"
+          >
+            {isInCart ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
+            Adicionar
+          </button>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
