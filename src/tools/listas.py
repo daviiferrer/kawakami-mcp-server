@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 
 from mcp.server.fastmcp import Context
@@ -11,6 +12,8 @@ from src.infrastructure.session_store import session_store
 from src.infrastructure.validation import sanitize_term, validate_nome_lista
 from src.infrastructure.vipcommerce_client import vip_client
 from src.presentation.formatters import format_price, format_saved_list, format_saved_lists_summary
+
+logger = logging.getLogger(__name__)
 
 _sem = asyncio.Semaphore(5)
 
@@ -33,9 +36,13 @@ async def _resolve_item(item: str, cep: str):
     )
 
 
-async def _resolve_safe(item: str, cep: str):
+async def _resolve_safe(item: str, cep: str) -> CarrinhoItem | None:
     async with _sem:
-        return await _resolve_item(item, cep)
+        try:
+            return await _resolve_item(item, cep)
+        except Exception as e:
+            logger.warning("Failed to resolve item '%s': %s", item, type(e).__name__)
+            return None
 
 
 @safe_tool
@@ -59,6 +66,14 @@ async def salvar_lista(
     tasks = [_resolve_safe(item, cep) for item in items_list]
     results = await asyncio.gather(*tasks)
     saved_items = [r for r in results if r is not None]
+    failed_items = [items_list[i] for i, r in enumerate(results) if r is None]
+
+    if not saved_items:
+        return (
+            f"Nenhum item da lista pôde ser encontrado. "
+            f"Itens nao encontrados: {', '.join(failed_items)}"
+        )
+
     total = sum(item.subtotal for item in saved_items)
     lista = ListaCompras(
         nome=nome,
@@ -68,17 +83,21 @@ async def salvar_lista(
         cep=cep,
     )
     session_store.save_list(session_id, nome, lista)
-    return (
-        f"Lista '{nome}' salva com {len(saved_items)} itens. Total estimado: {format_price(total)}"
+    msg = (
+        f"Lista '{nome}' salva com {len(saved_items)} itens. "
+        f"Total estimado: {format_price(total)}"
     )
+    if failed_items:
+        msg += f"\nItens nao encontrados: {', '.join(failed_items)}"
+    return msg
 
 
 @safe_tool
 async def minhas_listas(session_id: str, ctx: Context = None) -> str:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
-        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
+        return auth_err.content[0].text
     listas = session_store.get_all_lists(session_id)
     return format_saved_lists_summary(listas, session_id)
 

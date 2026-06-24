@@ -1,7 +1,10 @@
+import logging
 import re
 from pathlib import Path
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 WIDGET_URI = "ui://kawakami/catalog-v2.html"
 WIDGET_MIME_TYPE = "text/html;profile=mcp-app"
@@ -41,11 +44,19 @@ def load_widget_html(dist_dir: Path = WIDGET_DIST_DIR) -> str:
 
     def inline_stylesheet(match: re.Match[str]) -> str:
         asset_path = dist_dir / match.group("path").lstrip("/")
-        return f"<style>{asset_path.read_text(encoding='utf-8')}</style>"
+        try:
+            return f"<style>{asset_path.read_text(encoding='utf-8')}</style>"
+        except OSError as e:
+            logger.warning("Widget CSS asset not found: %s", asset_path)
+            return f"<!-- CSS asset missing: {e} -->"
 
     def inline_script(match: re.Match[str]) -> str:
         asset_path = dist_dir / match.group("path").lstrip("/")
-        return f'<script type="module">{asset_path.read_text(encoding="utf-8")}</script>'
+        try:
+            return f'<script type="module">{asset_path.read_text(encoding="utf-8")}</script>'
+        except OSError as e:
+            logger.warning("Widget JS asset not found: %s", asset_path)
+            return f"<!-- JS asset missing: {e} -->"
 
     html = re.sub(
         r'<link[^>]+rel="stylesheet"[^>]+href="(?P<path>[^"]+)"[^>]*>',

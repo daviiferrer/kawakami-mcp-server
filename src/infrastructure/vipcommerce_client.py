@@ -87,7 +87,15 @@ class VipCommerceClient:
                 self._breaker.record_success()
                 logger.debug("VIP request OK: %s", url)
                 return resp
-            except (httpx.ConnectError, httpx.ReadError, httpx.RemoteProtocolError) as e:
+            except TokenExpiredError:
+                self._breaker.record_failure()
+                raise
+            except (
+                httpx.ConnectError,
+                httpx.ReadError,
+                httpx.RemoteProtocolError,
+                httpx.TimeoutException,
+            ) as e:
                 last_error = e
                 logger.warning("VIP request attempt %d failed: %s", attempt + 1, str(e)[:100])
                 if attempt < max_retries - 1:
@@ -112,7 +120,11 @@ class VipCommerceClient:
 
         url = self._build_url(f"/buscas/produtos/termo/{termo}", cep)
         resp = await self._request(url, params={"page": page})
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError as e:
+            logger.error("Invalid JSON from search response: %s", str(e)[:100])
+            raise VipCommerceUnavailableError("Resposta invalida da API VIP Commerce") from e
         produtos_raw = data.get("data", {}).get("produtos", data.get("data", []))
         produtos = [Produto.from_api(p) for p in produtos_raw]
         paginator = data.get("paginator", {})
@@ -135,7 +147,11 @@ class VipCommerceClient:
 
         url = self._build_url("/classificacoes_mercadologicas/departamentos/arvore", cep)
         resp = await self._request(url)
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError as e:
+            logger.error("Invalid JSON from departments response: %s", str(e)[:100])
+            raise VipCommerceUnavailableError("Resposta invalida da API VIP Commerce") from e
         depts = []
         if data.get("success") and data.get("data"):
             for d in data["data"]:
@@ -174,7 +190,15 @@ class VipCommerceClient:
                 url,
                 params={"page": page, "limit": page_size},
             )
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError as e:
+                logger.error(
+                    "Invalid JSON from department products response: %s", str(e)[:100]
+                )
+                raise VipCommerceUnavailableError(
+                    "Resposta invalida da API VIP Commerce"
+                ) from e
             page_products = [Produto.from_api(p) for p in data.get("data", [])]
             produtos.extend(page_products)
             paginator = data.get("paginator", {})
@@ -203,8 +227,12 @@ class VipCommerceClient:
         tasks = [self.get_products_by_department(dept.id, limit=100_000, cep=cep) for dept in depts]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
+        failed_count = 0
+        first_error: Exception | None = None
         for idx, result in enumerate(results):
             if isinstance(result, Exception):
+                failed_count += 1
+                first_error = first_error or result
                 logger.warning(
                     "Department %s failed during product lookup: %s",
                     depts[idx].id,
@@ -217,6 +245,13 @@ class VipCommerceClient:
                 if p.produto_id == produto_id:
                     p.dept_name = dept_name
                     return p
+
+        if depts and failed_count == len(depts):
+            if isinstance(first_error, VipCommerceUnavailableError):
+                raise first_error
+            raise VipCommerceUnavailableError(
+                "Falha ao consultar todos os departamentos na busca por produto."
+            )
         return None
 
     async def get_best_offers(self, limit: int = 50, cep: str = "") -> list[Produto]:

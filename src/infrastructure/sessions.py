@@ -1,3 +1,5 @@
+import logging
+
 import jwt
 from mcp.server.fastmcp import Context
 from mcp.types import CallToolResult
@@ -6,6 +8,8 @@ from src.infrastructure.auth_required import get_bearer_token, require_auth
 from src.infrastructure.error_handler import safe_tool
 from src.infrastructure.session_store import session_store
 from src.presentation.structured import session_result
+
+logger = logging.getLogger(__name__)
 
 
 @safe_tool
@@ -21,7 +25,8 @@ async def criar_sessao(ctx: Context) -> CallToolResult:
         try:
             claims = jwt.decode(token_str, options={"verify_signature": False})
             user_id = claims.get("sub", "")
-        except Exception:
+        except (jwt.InvalidTokenError, KeyError) as e:
+            logger.warning("Failed to decode session JWT: %s", type(e).__name__)
             user_id = None
 
     if user_id:
