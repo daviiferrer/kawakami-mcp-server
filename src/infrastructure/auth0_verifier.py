@@ -15,9 +15,7 @@ class Auth0TokenVerifier(TokenVerifier):
     def __init__(self) -> None:
         if not settings.auth0_domain:
             raise RuntimeError("KWK_AUTH0_DOMAIN is required for OAuth")
-        self._jwks = PyJWKClient(
-            f"https://{settings.auth0_domain}/.well-known/jwks.json"
-        )
+        self._jwks = PyJWKClient(f"https://{settings.auth0_domain}/.well-known/jwks.json")
         self._audience = settings.auth0_audience or "https://kawakami.axischat.com.br"
         self._issuer = f"https://{settings.auth0_domain}/"
 

@@ -2,7 +2,7 @@ import jwt
 from mcp.server.fastmcp import Context
 from mcp.types import CallToolResult
 
-from src.infrastructure.auth_required import get_bearer_token, require_auth
+from src.infrastructure.auth_required import extract_request, get_bearer_token, require_auth
 from src.infrastructure.error_handler import safe_tool
 from src.infrastructure.session_store import session_store
 from src.presentation.structured import session_result
@@ -11,7 +11,7 @@ from src.presentation.structured import session_result
 @safe_tool
 async def criar_sessao(ctx: Context) -> CallToolResult:
     """Cria uma sessao isolada para carrinho e listas."""
-    request = ctx.request_context.request if ctx.request_context else None
+    request = extract_request(ctx)
     auth_err = require_auth(request)
     if auth_err is not None:
         return auth_err

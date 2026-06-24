@@ -1,5 +1,14 @@
+from mcp.server.fastmcp import Context
 from mcp.types import CallToolResult, TextContent
+
 from src.config import settings
+
+
+def extract_request(ctx: Context | None):
+    """Extract the HTTP request from a FastMCP Context."""
+    if ctx and ctx.request_context:
+        return ctx.request_context.request
+    return None
 
 
 def require_auth(request=None) -> CallToolResult | None:
@@ -11,10 +20,12 @@ def require_auth(request=None) -> CallToolResult | None:
             token = auth_header[7:]
     if not token:
         return CallToolResult(
-            content=[TextContent(
-                type="text",
-                text="Autenticacao necessaria. Vincule sua conta para usar carrinho e listas.",
-            )],
+            content=[
+                TextContent(
+                    type="text",
+                    text="Autenticacao necessaria. Vincule sua conta para usar carrinho e listas.",
+                )
+            ],
             _meta={
                 "mcp/www_authenticate": [
                     f'Bearer resource_metadata="{settings.auth0_audience}'

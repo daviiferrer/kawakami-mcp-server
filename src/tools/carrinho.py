@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.types import CallToolResult
 from mcp.server.fastmcp import Context
+from mcp.types import CallToolResult
 
 from src.config import settings
 from src.domain.models import CarrinhoItem
-from src.infrastructure.auth_required import require_auth
+from src.infrastructure.auth_required import extract_request, require_auth
 from src.infrastructure.error_handler import safe_tool
 from src.infrastructure.session_store import session_store
 from src.infrastructure.validation import sanitize_cep, sanitize_term, validate_quantidade
@@ -26,8 +26,7 @@ async def adicionar_ao_carrinho(
     modo: str = "adicionar",
     ctx: Context = None,
 ) -> CallToolResult | str:
-    request = ctx.request_context.request if ctx and ctx.request_context else None
-    auth_err = require_auth(request)
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
         return auth_err
 
@@ -47,22 +46,10 @@ async def adicionar_ao_carrinho(
         return f"Nenhum produto encontrado para '{termo}'."
 
     best = next((product for product in produtos if product.disponivel), produtos[0])
-    price = best.preco_efetivo
-    tag = best.oferta.tag if best.oferta else ""
-    item = CarrinhoItem(
-        produto_id=best.produto_id,
-        nome=best.descricao,
-        preco_unit=price,
-        quantidade=quantidade,
-        subtotal=round(price * quantidade, 2),
-        un=best.unidade_sigla,
-        imagem=best.imagem,
-        em_oferta=best.em_oferta,
-        tag=tag,
-    )
+    item = CarrinhoItem.from_produto(best, quantidade)
     cart = session_store.add_to_cart(session_id, item)
-    total = sum(cart_item.subtotal for cart_item in cart)
-    tag_text = f" [{tag}]" if tag else ""
+    total = CarrinhoItem.total(cart)
+    tag_text = f" [{item.tag}]" if item.tag else ""
     text = (
         f"+ {item.nome} ({quantidade}x) - {format_price(item.subtotal)}{tag_text}\n"
         f"Carrinho: {len(cart)} itens - {format_price(total)}"
@@ -86,7 +73,13 @@ async def _batch_add(
         produto_id = int(entry.get("produto_id", 0))
         qtd = int(entry.get("quantidade", 1))
         if produto_id <= 0 or qtd <= 0:
-            falharam.append({"produto_id": produto_id, "quantidade": qtd, "motivo": "produto_id ou quantidade invalidos"})
+            falharam.append(
+                {
+                    "produto_id": produto_id,
+                    "quantidade": qtd,
+                    "motivo": "produto_id ou quantidade invalidos",
+                }
+            )
             continue
 
         nome = entry.get("nome", "")
@@ -119,27 +112,21 @@ async def _batch_add(
             continue
 
         if product is None:
-            falharam.append({"produto_id": produto_id, "quantidade": qtd, "motivo": f"produto {produto_id} nao encontrado"})
+            falharam.append(
+                {
+                    "produto_id": produto_id,
+                    "quantidade": qtd,
+                    "motivo": f"produto {produto_id} nao encontrado",
+                }
+            )
             continue
 
-        price = product.preco_efetivo
-        product_tag = product.oferta.tag if product.oferta else ""
-        item = CarrinhoItem(
-            produto_id=product.produto_id,
-            nome=product.descricao,
-            preco_unit=price,
-            quantidade=qtd,
-            subtotal=round(price * qtd, 2),
-            un=product.unidade_sigla,
-            imagem=product.imagem,
-            em_oferta=product.em_oferta,
-            tag=product_tag,
-        )
+        item = CarrinhoItem.from_produto(product, qtd)
         session_store.add_to_cart(session_id, item)
         adicionados.append(f"{product.descricao} ({qtd}x)")
 
     cart = session_store.get_cart(session_id)
-    total = sum(ci.subtotal for ci in cart)
+    total = CarrinhoItem.total(cart)
 
     lines = [f"Adicionados: {len(adicionados)} itens"]
     if falharam:
@@ -150,8 +137,7 @@ async def _batch_add(
 
 @safe_tool
 async def ver_carrinho(session_id: str, ctx: Context = None) -> CallToolResult:
-    request = ctx.request_context.request if ctx and ctx.request_context else None
-    auth_err = require_auth(request)
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
         return auth_err
     cart = session_store.get_cart(session_id)
@@ -159,9 +145,10 @@ async def ver_carrinho(session_id: str, ctx: Context = None) -> CallToolResult:
 
 
 @safe_tool
-async def remover_do_carrinho(session_id: str, termo: str, ctx: Context = None) -> CallToolResult | str:
-    request = ctx.request_context.request if ctx and ctx.request_context else None
-    auth_err = require_auth(request)
+async def remover_do_carrinho(
+    session_id: str, termo: str, ctx: Context = None
+) -> CallToolResult | str:
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
         return auth_err
     termo = sanitize_term(termo)
@@ -179,15 +166,14 @@ async def remover_do_carrinho(session_id: str, termo: str, ctx: Context = None) 
         return f"Multiplos itens com '{termo}': {names}. Seja mais especifico."
 
     cart = session_store.get_cart(session_id)
-    total = sum(item.subtotal for item in cart)
+    total = CarrinhoItem.total(cart)
     text = f"- {removed.nome}\nCarrinho: {len(cart)} itens - {format_price(total)}"
     return cart_result(text, session_id=session_id, cart=cart)
 
 
 @safe_tool
 async def limpar_carrinho(session_id: str, ctx: Context = None) -> CallToolResult:
-    request = ctx.request_context.request if ctx and ctx.request_context else None
-    auth_err = require_auth(request)
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
         return auth_err
     session_store.clear_cart(session_id)

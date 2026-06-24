@@ -5,7 +5,7 @@ from mcp.server.fastmcp import Context
 
 from src.config import settings
 from src.domain.models import CarrinhoItem, ListaCompras
-from src.infrastructure.auth_required import require_auth
+from src.infrastructure.auth_required import extract_request, require_auth
 from src.infrastructure.error_handler import safe_tool
 from src.infrastructure.session_store import session_store
 from src.infrastructure.validation import sanitize_term, validate_nome_lista
@@ -20,17 +20,7 @@ async def _resolve_item(item: str, cep: str):
     if not produtos:
         return None
     best = next((p for p in produtos if p.disponivel), produtos[0])
-    return CarrinhoItem(
-        produto_id=best.produto_id,
-        nome=best.descricao,
-        preco_unit=best.preco_efetivo,
-        quantidade=1,
-        subtotal=best.preco_efetivo,
-        un=best.unidade_sigla,
-        imagem=best.imagem,
-        em_oferta=best.em_oferta,
-        tag=best.oferta.tag if best.oferta else "",
-    )
+    return CarrinhoItem.from_produto(best)
 
 
 async def _resolve_safe(item: str, cep: str):
@@ -46,8 +36,7 @@ async def salvar_lista(
     cep: str = settings.default_cep,
     ctx: Context = None,
 ) -> str:
-    request = ctx.request_context.request if ctx and ctx.request_context else None
-    auth_err = require_auth(request)
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
         return auth_err.content[0].text
     nome = validate_nome_lista(nome)
@@ -59,7 +48,7 @@ async def salvar_lista(
     tasks = [_resolve_safe(item, cep) for item in items_list]
     results = await asyncio.gather(*tasks)
     saved_items = [r for r in results if r is not None]
-    total = sum(item.subtotal for item in saved_items)
+    total = CarrinhoItem.total(saved_items)
     lista = ListaCompras(
         nome=nome,
         itens=saved_items,
@@ -75,18 +64,16 @@ async def salvar_lista(
 
 @safe_tool
 async def minhas_listas(session_id: str, ctx: Context = None) -> str:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
-        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
+        return auth_err.content[0].text
     listas = session_store.get_all_lists(session_id)
     return format_saved_lists_summary(listas, session_id)
 
 
 @safe_tool
 async def ver_lista(session_id: str, nome: str, ctx: Context = None) -> str:
-    request = ctx.request_context.request if ctx and ctx.request_context else None
-    auth_err = require_auth(request)
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
         return auth_err.content[0].text
     nome = validate_nome_lista(nome)
@@ -98,12 +85,10 @@ async def ver_lista(session_id: str, nome: str, ctx: Context = None) -> str:
 
 @safe_tool
 async def excluir_lista(session_id: str, nome: str, ctx: Context = None) -> str:
-    request = ctx.request_context.request if ctx and ctx.request_context else None
-    auth_err = require_auth(request)
+    auth_err = require_auth(extract_request(ctx))
     if auth_err is not None:
         return auth_err.content[0].text
     nome = validate_nome_lista(nome)
     if session_store.delete_list(session_id, nome):
         return f"Lista '{nome}' excluida."
     return f"Lista '{nome}' nao encontrada."
-

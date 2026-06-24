@@ -6,6 +6,12 @@ def format_price(value: float) -> str:
     return f"R$ {value:.2f}".replace(".", ",")
 
 
+def format_image_url(image_path: str) -> str:
+    if image_path:
+        return f"{settings.img_base_url}/{image_path}"
+    return "N/A"
+
+
 def format_product_card(p: Produto) -> str:
     preco = format_price(p.preco)
     disp = "SIM" if p.disponivel else "NAO"
@@ -21,9 +27,8 @@ def format_product_card(p: Produto) -> str:
             line += f" ({o.desconto_pct:.0f}% OFF, era {format_price(o.preco_antigo)})"
 
     line += f"\n  Estoque: {estoque} | Disponivel: {disp}"
-    img_url = f"{settings.img_base_url}/{p.imagem}" if p.imagem else "N/A"
     line += f"\n  ID: {p.produto_id} | EAN: {p.codigo_barras}"
-    line += f"\n  Imagem: {img_url}"
+    line += f"\n  Imagem: {format_image_url(p.imagem)}"
     line += f"\n  Link: https://www.kawakami.com.br/produto/{p.produto_id}/{p.link}"
     return line
 
@@ -78,9 +83,8 @@ def format_department_products(
             line += f" | OFERTA: {format_price(p.oferta.preco_oferta)} [{p.oferta.tag}]"
 
         line += f" | Estoque: {p.quantidade_maxima} | Vendidos: {p.quantidade_vendida}"
-        img_url = f"{settings.img_base_url}/{p.imagem}" if p.imagem else "N/A"
         line += f"\n  EAN: {p.codigo_barras} | SKU: {p.sku} | ID: {p.produto_id}"
-        line += f"\n  Imagem: {img_url}"
+        line += f"\n  Imagem: {format_image_url(p.imagem)}"
         lines.append(line)
         lines.append("---")
 
@@ -91,8 +95,7 @@ def format_product_detail(p: Produto, dept_name: str) -> str:
     lines = [f"=== {p.descricao} ==="]
     lines.append(f"ID: {p.produto_id}")
     lines.append(f"Preco normal: {format_price(p.preco)} / {p.unidade_sigla}")
-    img_url = f"{settings.img_base_url}/{p.imagem}" if p.imagem else "N/A"
-    lines.append(f"Imagem: {img_url}")
+    lines.append(f"Imagem: {format_image_url(p.imagem)}")
     lines.append(f"EAN: {p.codigo_barras}")
     lines.append(f"SKU: {p.sku}")
     lines.append(f"Codigo ERP: {p.codigo_erp}")
@@ -133,7 +136,7 @@ def format_offers_ranking(ofertas: list[Produto], cep: str) -> str:
                 f"   Tag: {oferta.tag} | Estoque: {o.quantidade_maxima} | ID: {o.produto_id}"
             )
             if o.imagem:
-                lines.append(f"   Imagem: {settings.img_base_url}/{o.imagem}")
+                lines.append(f"   Imagem: {format_image_url(o.imagem)}")
         lines.append("")
 
     return "\n".join(lines)
@@ -168,7 +171,7 @@ def format_saved_list(lista: ListaCompras) -> str:
         lines.append(f"{i}. {item.nome}")
         lines.append(f"   {format_price(item.preco_unit)} / {item.un}")
         if item.imagem:
-            lines.append(f"   Imagem: {settings.img_base_url}/{item.imagem}")
+            lines.append(f"   Imagem: {format_image_url(item.imagem)}")
 
     lines.append("")
     lines.append(f"TOTAL: {format_price(lista.total)}")

@@ -2,7 +2,7 @@ from mcp.types import CallToolResult
 
 from src.config import settings
 from src.infrastructure.error_handler import safe_tool
-from src.infrastructure.validation import sanitize_cep, validate_produto_id
+from src.infrastructure.validation import clamp_limit, sanitize_cep, validate_produto_id
 from src.infrastructure.vipcommerce_client import vip_client
 from src.presentation.formatters import (
     format_department_list,
@@ -27,7 +27,7 @@ async def produtos_por_departamento(
     apenas_ofertas: bool = False,
 ) -> CallToolResult:
     cep = sanitize_cep(cep)
-    limite = min(max(limite, 1), 500)
+    limite = clamp_limit(limite, max_value=500)
     dept_name = f"Departamento {departamento_id}"
     produtos, paginator = await vip_client.get_products_by_department(
         departamento_id,

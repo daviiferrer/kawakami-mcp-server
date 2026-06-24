@@ -30,6 +30,10 @@ def validate_quantidade(quantidade: int) -> int:
     return min(quantidade, MAX_QUANTIDADE)
 
 
+def clamp_limit(limite: int, max_value: int = 100) -> int:
+    return min(max(limite, 1), max_value)
+
+
 def validate_nome_lista(nome: str) -> str:
     cleaned = nome.strip()
     if len(cleaned) > 80:
