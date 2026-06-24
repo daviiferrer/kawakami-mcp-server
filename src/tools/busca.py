@@ -2,7 +2,7 @@ from mcp.types import CallToolResult
 
 from src.config import settings
 from src.infrastructure.error_handler import safe_tool
-from src.infrastructure.validation import sanitize_cep, sanitize_term
+from src.infrastructure.validation import clamp_limit, sanitize_cep, sanitize_term
 from src.infrastructure.vipcommerce_client import vip_client
 from src.presentation.formatters import format_search_results
 from src.presentation.structured import products_result
@@ -19,7 +19,7 @@ async def buscar_produtos(
     if not termo:
         return "Digite um termo de busca valido."
     cep = sanitize_cep(cep)
-    limite = min(max(limite, 1), 100)
+    limite = clamp_limit(limite)
     produtos, paginator = await vip_client.search_products(termo, pagina, cep=cep)
     visible_products = produtos[:limite]
     text = format_search_results(termo, visible_products, paginator)

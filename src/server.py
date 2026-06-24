@@ -180,27 +180,25 @@ def create_mcp(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
         return JSONResponse({"status": "ok"})
 
     if settings.auth0_domain:
-        @mcp.custom_route(
+
+        async def _oauth_metadata(_: Request) -> JSONResponse:
+            return JSONResponse(
+                {
+                    "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
+                    "authorization_servers": [f"https://{settings.auth0_domain}/"],
+                    "scopes_supported": ["cart:read", "cart:write"],
+                }
+            )
+
+        mcp.custom_route(
             "/.well-known/oauth-protected-resource",
             methods=["GET"],
             include_in_schema=False,
-        )
-        async def oauth_metadata(_: Request) -> JSONResponse:
-            return JSONResponse({
-                "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
-                "authorization_servers": [f"https://{settings.auth0_domain}/"],
-                "scopes_supported": ["cart:read", "cart:write"],
-            })
-        @mcp.custom_route(
+        )(_oauth_metadata)
+        mcp.custom_route(
             "/.well-known/oauth-protected-resource/mcp",
             methods=["GET"],
             include_in_schema=False,
-        )
-        async def oauth_metadata_mcp(_: Request) -> JSONResponse:
-            return JSONResponse({
-                "resource": settings.auth0_audience or "https://kawakami.axischat.com.br",
-                "authorization_servers": [f"https://{settings.auth0_domain}/"],
-                "scopes_supported": ["cart:read", "cart:write"],
-            })
+        )(_oauth_metadata)
 
     return mcp

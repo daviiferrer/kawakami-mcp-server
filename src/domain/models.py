@@ -89,6 +89,26 @@ class CarrinhoItem:
     em_oferta: bool = False
     tag: str = ""
 
+    @classmethod
+    def from_produto(cls, produto: "Produto", quantidade: int = 1) -> "CarrinhoItem":
+        price = produto.preco_efetivo
+        tag = produto.oferta.tag if produto.oferta else ""
+        return cls(
+            produto_id=produto.produto_id,
+            nome=produto.descricao,
+            preco_unit=price,
+            quantidade=quantidade,
+            subtotal=round(price * quantidade, 2),
+            un=produto.unidade_sigla,
+            imagem=produto.imagem,
+            em_oferta=produto.em_oferta,
+            tag=tag,
+        )
+
+    @staticmethod
+    def total(items: "list[CarrinhoItem]") -> float:
+        return sum(item.subtotal for item in items)
+
 
 @dataclass
 class ListaCompras:

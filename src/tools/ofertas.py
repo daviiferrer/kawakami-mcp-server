@@ -2,7 +2,7 @@ from mcp.types import CallToolResult
 
 from src.config import settings
 from src.infrastructure.error_handler import safe_tool
-from src.infrastructure.validation import sanitize_cep, validate_produto_id
+from src.infrastructure.validation import clamp_limit, sanitize_cep, validate_produto_id
 from src.infrastructure.vipcommerce_client import vip_client
 from src.presentation.formatters import format_offers_ranking
 from src.presentation.structured import products_result
@@ -14,7 +14,7 @@ async def ofertas_do_dia(
     limite: int = 50,
 ) -> CallToolResult:
     cep = sanitize_cep(cep)
-    limite = min(max(limite, 1), 100)
+    limite = clamp_limit(limite)
     ofertas = await vip_client.get_best_offers(limite, cep=cep)
     text = format_offers_ranking(ofertas, cep)
     return products_result(
