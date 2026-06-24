@@ -40,7 +40,7 @@ def safe_tool(
             return msg
         except Exception as e:
             logger.error("Tool %s unexpected error: %s", func.__name__, str(e), exc_info=True)
-            return f"Erro inesperado ao processar sua solicitacao. Detalhes: {type(e).__name__}"
+            return "Erro inesperado ao processar sua solicitacao. Tente novamente."
 
     setattr(wrapper, "__signature__", sig)
     return wrapper

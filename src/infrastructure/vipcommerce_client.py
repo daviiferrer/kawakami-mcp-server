@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time as time_module
 from typing import Optional
+from urllib.parse import quote
 
 import httpx
 
@@ -110,7 +111,7 @@ class VipCommerceClient:
             if cached:
                 return cached, {"total_items": len(cached), "page": 1, "total_pages": 1}
 
-        url = self._build_url(f"/buscas/produtos/termo/{termo}", cep)
+        url = self._build_url(f"/buscas/produtos/termo/{quote(termo, safe='')}", cep)
         resp = await self._request(url, params={"page": page})
         data = resp.json()
         produtos_raw = data.get("data", {}).get("produtos", data.get("data", []))
