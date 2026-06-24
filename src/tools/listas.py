@@ -75,10 +75,10 @@ async def salvar_lista(
 
 @safe_tool
 async def minhas_listas(session_id: str, ctx: Context = None) -> str:
-    from src.infrastructure.auth_required import require_auth
-    auth_err = require_auth()
+    request = ctx.request_context.request if ctx and ctx.request_context else None
+    auth_err = require_auth(request)
     if auth_err is not None:
-        return auth_err.content[0].text if hasattr(auth_err, 'content') else str(auth_err)
+        return auth_err.content[0].text
     listas = session_store.get_all_lists(session_id)
     return format_saved_lists_summary(listas, session_id)
 
